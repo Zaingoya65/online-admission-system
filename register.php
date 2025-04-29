@@ -1,4 +1,5 @@
 <?php
+echo "testing system";
 include './db/db_connection.php';
 
 // Start session
