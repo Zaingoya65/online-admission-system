@@ -1,4 +1,3 @@
-<?php echo "Deployed from GitHub at " . date('Y-m-d H:i:s'); ?>
 
 <!doctype html>
 <html>
