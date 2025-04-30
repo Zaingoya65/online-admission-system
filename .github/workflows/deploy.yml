@@ -1,9 +1,9 @@
-name:  Deploy to Hostinger
+name: 🚀 Deploy to Hostinger
 
 on:
   push:
     branches:
-      - master  # or 'master', depending on your default branch
+      - master  # or 'main', if your default branch is named main
 
 jobs:
   ftp-deploy:
@@ -14,10 +14,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Upload with FTP
+      - name: Upload files via SFTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ${{ secrets.FTP_HOST }}        
+          server: ftp.yellowgreen-rail-679884.hostingersite.com        # ❗ Use FTP hostname, NOT your website URL
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: public_html/               
+          server-dir: public_html/
+          protocol: sftp                   # ✅ Explicitly specify SFTP
