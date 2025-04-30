@@ -1,6 +1,9 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0); // DON'T display on page
+ini_set('log_errors', 1);     // LOG errors instead
+ini_set('error_log', __DIR__ . '/php-error.log'); // Log errors into a file
+
 
 
 include './db/db_connection.php';
