@@ -1,9 +1,6 @@
 <?php
-header('Content-Type: application/json');
-error_reporting(E_ERROR | E_PARSE);
 
 include './db/db_connection.php';
-
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -12,6 +9,14 @@ use PHPMailer\PHPMailer\Exception;
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Set Content-Type to JSON **only when** it's a POST request
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    error_reporting(E_ERROR | E_PARSE);
+}
+
+
 
 // Handle OTP verification
 if (isset($_POST['verify_otp'])) {
