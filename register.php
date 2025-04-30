@@ -1,6 +1,10 @@
 <?php
-echo "testing system";
+
 include './db/db_connection.php';
+
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 // Start session
 if (session_status() === PHP_SESSION_NONE) {
@@ -83,7 +87,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_otp'])) {
                 
                 // Send OTP to user (in production, use email/SMS service)
                 // This is just a simulation - in real app, use PHPMailer or similar
-                error_log("OTP for $email: $otp"); // For testing
+              
+                require './phpmailer/src/Exception.php';
+                require './phpmailer/src/PHPMailer.php';
+                require './phpmailer/src/SMTP.php';
+                
+                $mail = new PHPMailer(true);
+                
+                try {
+                    //Server settings
+                    $mail->isSMTP();
+                    $mail->Host       = 'smtp.hostinger.com'; // Hostinger SMTP
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = 'your_email@yourdomain.com'; // your email on Hostinger
+                    $mail->Password   = 'your_email_password'; // your email's password
+                    $mail->SMTPSecure = 'tls';
+                    $mail->Port       = 587;
+                
+                    //Recipients
+                    $mail->setFrom('admissions@alhijrah.pk', 'AHRSC Admissions');
+                    $mail->addAddress($email); // Recipient
+                
+                    //Content
+                    $mail->isHTML(true);
+                    $mail->Subject = 'Your OTP for AHRSC Registration';
+                    $mail->Body    = "Your One-Time Password (OTP) is: <b>$otp</b><br><br>This code will expire in 15 minutes.";
+                
+                    $mail->send();
+                } catch (Exception $e) {
+                    error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+                }
+                
                 
                 // Return success with OTP verification flag
                 echo json_encode([
