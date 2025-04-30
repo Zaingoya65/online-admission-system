@@ -3,7 +3,7 @@ name: Deploy to Hostinger
 on:
   push:
     branches:
-      - main  clear
+      - master  
 
 jobs:
   ftp-deploy:
