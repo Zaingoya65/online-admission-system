@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_otp'])) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>Register - Alhijrah AHRSC</title>
+    <title>Regist  Alhijrah AHRSC</title>
     <script>
         let otpVerificationMode = false;
         
