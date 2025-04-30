@@ -9,17 +9,16 @@ jobs:
   ftp-deploy:
     name: 📂 Upload to Hostinger
     runs-on: ubuntu-latest
-# ftp.yellowgreen-rail-679884.hostingersite.com  
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Upload files via SFTP
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-      with:
-        server: ftp.yellowgreen-rail-679884.hostingersite.com  
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        server-dir: public_html/
-        protocol: ftps
-
+      - name: Upload files via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ftp.yellowgreen-rail-679884.hostingersite.com
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: public_html/
+          protocol: ftps
