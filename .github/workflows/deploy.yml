@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Upload files via FTPS
+      - name: Upload files via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ftp.yellowgreen-rail-679884.hostingersite.com
@@ -22,6 +22,11 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: public_html/
           protocol: ftp
+
+
+      
+        
+
 
 
   
