@@ -1,4 +1,6 @@
-<?php include '../session_auth.php'; 
+<?php 
+include '../session_auth.php'; 
+include '../db/db_connection.php';
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   // Validate required fields
@@ -123,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } else {
   // Not a POST request, redirect
   // header('Location: feepayment.php');
-  exit;
+  // exit;
 }
 
 ?>
