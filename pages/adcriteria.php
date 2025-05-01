@@ -216,7 +216,7 @@ if (isset($_SESSION['criteria_met']) && $_SESSION['criteria_met'] === true) {
 <?php
 if (isset($_POST['accept_criteria'])) {
     $_SESSION['criteria_met'] = true;
-    header("Location: /pages/portalguidance.php");
+    header("Location: portalguidance.php");
     exit();
 }
 ?>
