@@ -1,4 +1,132 @@
-<?php include '../session_auth.php'; ?>
+<?php include '../session_auth.php'; 
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  // Validate required fields
+  $required = ['fullName', 'fatherName', 'bForm', 'fatherCNIC', 'dob', 'guardianOccupation', 
+              'postalAddress', 'lastSchool', 'gradeMarks', 'totalMarks', 'passingDate',
+              'contactNo', 'emergencyContact', 'email', 'confirmation'];
+  
+  $errors = [];
+  foreach ($required as $field) {
+      if (empty($_POST[$field])) {
+          $errors[] = ucfirst($field) . " is required.";
+      }
+  }
+  
+  // Validate email
+  if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+      $errors[] = "Invalid email format.";
+  }
+  
+  // Validate confirmation checkbox
+  if (!isset($_POST['confirmation'])) {
+      $errors[] = "You must confirm the information is accurate.";
+  }
+  
+  // If no errors, process the form
+  if (empty($errors)) {
+      // Handle file uploads
+      $uploads = [];
+      $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+      $maxSize = 2 * 1024 * 1024; // 2MB
+      
+      if (!empty($_FILES)) {
+          foreach ($_FILES as $field => $file) {
+              if ($file['error'] === UPLOAD_ERR_OK) {
+                  // Validate file type and size
+                  if (in_array($file['type'], $allowedTypes) && $file['size'] <= $maxSize) {
+                      $uploadDir = '../uploads/applications/';
+                      if (!file_exists($uploadDir)) {
+                          mkdir($uploadDir, 0777, true);
+                      }
+                      $filename = uniqid() . '_' . basename($file['name']);
+                      $targetPath = $uploadDir . $filename;
+                      
+                      if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+                          $uploads[$field] = $filename;
+                      }
+                  } else {
+                      $errors[] = "Invalid file type or size for " . $field;
+                  }
+              } elseif ($file['error'] !== UPLOAD_ERR_NO_FILE) {
+                  $errors[] = "Error uploading file for " . $field;
+              }
+          }
+      }
+      
+      // If there were file upload errors, store them and redirect back
+      if (!empty($errors)) {
+          $_SESSION['form_errors'] = $errors;
+          $_SESSION['form_data'] = $_POST;
+          header('Location: application_form.php');
+          exit;
+      }
+      
+      // Prepare data for database
+      $data = [
+          'full_name' => $_POST['fullName'],
+          'father_name' => $_POST['fatherName'],
+          'b_form' => $_POST['bForm'],
+          'father_cnic' => $_POST['fatherCNIC'],
+          'dob' => $_POST['dob'],
+          'guardian_occupation' => $_POST['guardianOccupation'],
+          'postal_address' => $_POST['postalAddress'],
+          'last_school' => $_POST['lastSchool'],
+          'grade_marks' => $_POST['gradeMarks'],
+          'total_marks' => $_POST['totalMarks'],
+          'passing_date' => $_POST['passingDate'],
+          'contact_no' => $_POST['contactNo'],
+          'emergency_contact' => $_POST['emergencyContact'],
+          'email' => $_POST['email'],
+          'photo_path' => $uploads['photo'] ?? null,
+          'b_form_copy_path' => $uploads['bFormCopy'] ?? null,
+          'certificate_path' => $uploads['certificate'] ?? null,
+          'user_id' => $_SESSION['user_id'], // Assuming you have user authentication
+          'submitted_at' => date('Y-m-d H:i:s')
+      ];
+      
+      try {
+          $stmt = $pdo->prepare("
+              INSERT INTO applications (
+                  full_name, father_name, b_form, father_cnic, dob, guardian_occupation,
+                  postal_address, last_school, grade_marks, total_marks, passing_date,
+                  contact_no, emergency_contact, email, photo_path, b_form_copy_path,
+                  certificate_path, user_id, submitted_at
+              ) VALUES (
+                  :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
+                  :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
+                  :contact_no, :emergency_contact, :email, :photo_path, :b_form_copy_path,
+                  :certificate_path, :user_id, :submitted_at
+              )
+          ");
+          
+          $stmt->execute($data);
+          
+          // Redirect to success page
+          header('Location: application_success.php');
+          exit;
+          
+      } catch (PDOException $e) {
+          $errors[] = "Database error: " . $e->getMessage();
+          $_SESSION['form_errors'] = $errors;
+          $_SESSION['form_data'] = $_POST;
+          header('Location: application_form.php');
+          exit;
+      }
+  } else {
+      // If there were errors, store them in session and redirect back
+      $_SESSION['form_errors'] = $errors;
+      $_SESSION['form_data'] = $_POST;
+      header('Location: application_form.php');
+      exit;
+  }
+} else {
+  // Not a POST request, redirect
+  header('Location: feepayment.php');
+  exit;
+}
+
+?>
 
 <!doctype html>
 <html>
@@ -62,35 +190,26 @@
           </h3>
           
 
-          <div class="mb-6">
-    <label for="studentPhoto" class="block text-sm font-medium text-gray-700">
-      Student Photo (White Background) <span class="text-red-500">*</span>
-    </label>
-    <div class="mt-1 flex items-center">
-      <div class="relative">
-        <input type="file" name="studentPhoto" id="studentPhoto" required
-               accept="image/jpeg, image/png" 
-               class="hidden">
-        <label for="studentPhoto" class="cursor-pointer">
-          <div class="w-24 h-24 rounded-full bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center overflow-hidden">
-            <img id="photoPreview" src="#" alt="Preview" class="hidden w-full h-full object-cover">
-            <div id="uploadIcon" class="text-gray-500 text-center p-2">
-              <i class="fas fa-camera text-2xl mb-1"></i>
-              <p class="text-xs">Upload Photo</p>
+          
+          <div>
+            <label for="photo" class="block text-sm font-medium text-gray-700">
+                Student Photo <span class="text-red-500">*</span>
+            </label>
+            <div class="mt-1">
+                <input type="file" name="photo" id="photo" accept="image/*" required
+                    class="hidden" onchange="previewImage(this, 'photoPreview')">
+                
+                <label for="photo" class="cursor-pointer">
+                    <div id="photoPreview" class="w-full h-40 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden">
+                        <div class="text-center text-gray-500">
+                            <i class="fas fa-camera text-2xl mb-2"></i>
+                            <p class="text-xs">Click to upload photo</p>
+                        </div>
+                    </div>
+                </label>
+                <p class="mt-1 text-xs text-gray-500">JPEG or PNG (Max 0.5MB)</p>
             </div>
-          </div>
-        </label>
-      </div>
-      <div class="ml-4 text-xs text-gray-500">
-        <p>• White background required</p>
-        <p>• Max size: 0.5MB</p>
-        <p>• JPG or PNG only</p>
-        <p>• Face clearly visible</p>
-      </div>
-    </div>
-    <p id="photoError" class="mt-1 text-xs text-red-600 hidden"></p>
-  </div>
-
+        </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -403,7 +522,7 @@
           <i class="fas fa-redo mr-2"></i> Reset Form
         </button>
         <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-          <i class="fas fa-paper-plane mr-2"></i> Submit Application
+          <i class="fas fa-paper-plane mr-2"></i> Save Application
         </button>
       </div>
       </form>
@@ -413,39 +532,6 @@
 
     </div>
   </div>
-
-  <script>
-    // Toggle sidebar on mobile
-    const sidebar = document.getElementById('sidebar');
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const menuIcon = document.getElementById('menuIcon');
-    const collapseToggle = document.getElementById('collapseToggle');
-    
-    // Mobile toggle
-    sidebarToggle.addEventListener('click', function() {
-      sidebar.classList.toggle('active');
-      sidebarOverlay.classList.toggle('active');
-      
-      // Toggle between hamburger and close icon
-      if (sidebar.classList.contains('active')) {
-        menuIcon.classList.replace('fa-bars', 'fa-times');
-      } else {
-        menuIcon.classList.replace('fa-times', 'fa-bars');
-      }
-    });
-    
-    // Close sidebar when clicking overlay
-    sidebarOverlay.addEventListener('click', function() {
-      sidebar.classList.remove('active');
-      sidebarOverlay.classList.remove('active');
-      menuIcon.classList.replace('fa-times', 'fa-bars');
-    });
-    
-    // Desktop collapse/expand
-    collapseToggle.addEventListener('click', function() {
-      sidebar.classList.toggle('collapsed');
-    });
-  </script>
+<script src="../partials/script.js"></script>
 </body>
 </html>
