@@ -111,7 +111,7 @@ if (isset($_GET['forgot'])) {
         function showForgotPassword() {
             const email = prompt("Please enter your email address:");
             if (email) {
-                window.location.href = "login.php?forgot=1&email=" + encodeURIComponent(email);
+                window.location.href = "index.php?forgot=1&email=" + encodeURIComponent(email);
             }
         }
     </script>

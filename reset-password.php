@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 <div class="text-center">
-                    <a href="login.php" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Login Now</a>
+                    <a href="index.php" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Login Now</a>
                 </div>
             <?php elseif (empty($error)): ?>
                 <form class="space-y-4" method="POST">
