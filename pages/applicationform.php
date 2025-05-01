@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (!empty($errors)) {
           $_SESSION['form_errors'] = $errors;
           $_SESSION['form_data'] = $_POST;
-          header('Location: application_form.php');
+          header('Location: applicationform.php');
           exit;
       }
       
@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           $errors[] = "Database error: " . $e->getMessage();
           $_SESSION['form_errors'] = $errors;
           $_SESSION['form_data'] = $_POST;
-          header('Location: application_form.php');
+          header('Location: applicationform.php');
           exit;
       }
   } else {
@@ -150,6 +150,14 @@ try {
   <title>Application Form - Alhijrah AHRSC</title>
 </head>
 <body class="bg-gray-100">
+<!-- Error Checking  -->
+<?php if (!empty($_SESSION['form_errors'])): ?>
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+        <?php foreach ($_SESSION['form_errors'] as $error): ?>
+            <p><?php echo htmlspecialchars($error); ?></p>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
   <!-- Mobile menu button -->
   <button id="sidebarToggle" class="md:hidden fixed top-4 left-4 z-50 text-gray-600 p-2">
     <i class="fas fa-bars" id="menuIcon"></i>
