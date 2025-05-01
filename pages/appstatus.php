@@ -1,6 +1,4 @@
-<?php
-$currentPage = basename($_SERVER['PHP_SELF']);
-?>
+<?php include '../session_auth.php'; ?>
 
 <!doctype html>
 <html>
