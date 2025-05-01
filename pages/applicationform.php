@@ -36,35 +36,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // If no errors, process the form
     if (empty($errors)) {
-        // Handle file uploads
-        $uploads = [];
-        $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-        $maxSize = 2 * 1024 * 1024; // 2MB
-        
-        if (!empty($_FILES)) {
-            foreach ($_FILES as $field => $file) {
-                if ($file['error'] === UPLOAD_ERR_OK) {
-                    // Validate file type and size
-                    if (in_array($file['type'], $allowedTypes) && $file['size'] <= $maxSize) {
-                        $uploadDir = '../uploads/applications/';
-                        if (!file_exists($uploadDir)) {
-                            mkdir($uploadDir, 0777, true);
-                        }
-                        $filename = uniqid() . '_' . basename($file['name']);
-                        $targetPath = $uploadDir . $filename;
-                        
-                        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                            $uploads[$field] = $filename;
-                        } else {
-                            $errors[] = "Failed to upload file for " . $field;
-                        }
-                    } else {
-                        $errors[] = "Invalid file type or size for " . $field;
-                    }
-                } elseif ($file['error'] !== UPLOAD_ERR_NO_FILE) {
-                    $errors[] = "Error uploading file for " . $field;
+        // Handle file upload (only photo in this form)
+        $photoPath = null;
+        if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+            $allowedTypes = ['image/jpeg', 'image/png'];
+            $maxSize = 2 * 1024 * 1024; // 2MB
+            
+            if (in_array($_FILES['photo']['type'], $allowedTypes) && $_FILES['photo']['size'] <= $maxSize) {
+                $uploadDir = '../uploads/applications/';
+                if (!file_exists($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
                 }
+                $filename = uniqid() . '_' . basename($_FILES['photo']['name']);
+                $targetPath = $uploadDir . $filename;
+                
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], $targetPath)) {
+                    $photoPath = $filename;
+                } else {
+                    $errors[] = "Failed to upload photo";
+                }
+            } else {
+                $errors[] = "Invalid photo type or size (JPEG/PNG, Max 2MB)";
             }
+        } else {
+            $errors[] = "Student photo is required";
         }
         
         // If there were file upload errors, store them and redirect back
@@ -91,10 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'contact_no' => $_POST['contactNo'],
             'emergency_contact' => $_POST['emergencyContact'],
             'email' => $_POST['email'],
-            'photo_path' => $uploads['photo'] ?? null,
-            'b_form_copy_path' => $uploads['bFormCopy'] ?? null,
-            'certificate_path' => $uploads['certificate'] ?? null,
-            'user_id' => $_SESSION['user_id'], // Assuming you have user authentication
+            'photo_path' => $photoPath,
+            'user_id' => $_SESSION['user_id'],
             'submitted_at' => date('Y-m-d H:i:s')
         ];
         
@@ -103,17 +96,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO applications (
                     full_name, father_name, b_form, father_cnic, dob, guardian_occupation,
                     postal_address, last_school, grade_marks, total_marks, passing_date,
-                    contact_no, emergency_contact, email, photo_path, b_form_copy_path,
-                    certificate_path, user_id, submitted_at
+                    contact_no, emergency_contact, email, photo_path, user_id, submitted_at
                 ) VALUES (
                     :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
                     :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
-                    :contact_no, :emergency_contact, :email, :photo_path, :b_form_copy_path,
-                    :certificate_path, :user_id, :submitted_at
+                    :contact_no, :emergency_contact, :email, :photo_path, :user_id, :submitted_at
                 )
             ");
             
             $stmt->execute($data);
+            
+            // Get the last inserted ID
+            $applicationId = $pdo->lastInsertId();
+            
+            // Store application ID in session for document upload page
+            $_SESSION['current_application_id'] = $applicationId;
             
             // Clear form data from session
             unset($_SESSION['form_errors']);
@@ -220,7 +217,7 @@ try {
               <ul class="text-xs text-blue-700 mt-1 list-disc list-inside space-y-1">
                 <li>All fields marked with <span class="text-red-500">*</span> are mandatory</li>
                 <li>Please fill the form carefully with accurate information</li>
-                <li>You will need to upload supporting documents after form submission</li>
+                <li>You will need to upload supporting documents in the next step</li>
                 <li>Incomplete or incorrect applications may be rejected</li>
                 <li>For assistance, contact admissions office at <span class="font-semibold">admissions@alhijrah.edu.pk</span></li>
               </ul>
@@ -479,48 +476,6 @@ try {
               </div>
             </div>
             
-            <!-- Document Upload Section -->
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h3 class="text-md font-medium text-gray-700 mb-4 flex items-center">
-                <i class="fas fa-file-upload text-indigo-500 mr-2"></i>
-                Document Uploads
-              </h3>
-              
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label for="bFormCopy" class="block text-sm font-medium text-gray-700">
-                    B-Form Copy <span class="text-red-500">*</span>
-                  </label>
-                  <div class="mt-1">
-                    <input type="file" name="bFormCopy" id="bFormCopy" accept=".pdf,.jpg,.jpeg,.png" required
-                        class="block w-full text-sm text-gray-500
-                          file:mr-4 file:py-2 file:px-4
-                          file:rounded-md file:border-0
-                          file:text-sm file:font-semibold
-                          file:bg-indigo-50 file:text-indigo-700
-                          hover:file:bg-indigo-100">
-                    <p class="mt-1 text-xs text-gray-500">PDF, JPEG or PNG (Max 2MB)</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <label for="certificate" class="block text-sm font-medium text-gray-700">
-                    Last School Certificate <span class="text-red-500">*</span>
-                  </label>
-                  <div class="mt-1">
-                    <input type="file" name="certificate" id="certificate" accept=".pdf,.jpg,.jpeg,.png" required
-                        class="block w-full text-sm text-gray-500
-                          file:mr-4 file:py-2 file:px-4
-                          file:rounded-md file:border-0
-                          file:text-sm file:font-semibold
-                          file:bg-indigo-50 file:text-indigo-700
-                          hover:file:bg-indigo-100">
-                    <p class="mt-1 text-xs text-gray-500">PDF, JPEG or PNG (Max 2MB)</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
             <!-- Final Confirmation Section -->
             <div class="mt-8 border-t border-gray-200 pt-6">
               <div class="bg-yellow-50 p-4 rounded-md border border-yellow-200 mb-6">
@@ -562,8 +517,7 @@ try {
               <ol class="text-xs text-gray-600 mt-2 list-decimal list-inside space-y-1">
                 <li>You will receive a confirmation email with your application reference number</li>
                 <li>Print the application form for your records (available in your dashboard)</li>
-                <li>Upload required documents in the 'Document Upload' section within 3 days</li>
-                <li>Pay the application fee</li>
+                <li>You will be redirected to the document upload page after successful submission</li>
                 <li>Check your application status regularly in the dashboard</li>
               </ol>
               <p class="text-xs text-gray-500 mt-3">
