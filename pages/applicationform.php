@@ -117,12 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       // If there were errors, store them in session and redirect back
       $_SESSION['form_errors'] = $errors;
       $_SESSION['form_data'] = $_POST;
-      header('Location: application_form.php');
+      header('Location: applicationform.php');
       exit;
   }
 } else {
   // Not a POST request, redirect
-  header('Location: feepayment.php');
+  // header('Location: feepayment.php');
   exit;
 }
 
@@ -181,7 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
       </div>
       
-      <form class="space-y-6" action="#" method="POST">
+      <!-- <form class="space-y-6" action="#" method="POST"> -->
+      <form class="space-y-6" action="" method="POST" enctype="multipart/form-data">
         <!-- Personal Information Card -->
         <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
           <h3 class="text-md font-medium text-gray-700 mb-4 flex items-center">
