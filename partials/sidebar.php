@@ -84,7 +84,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <nav>
           <ul class="space-y-1">
             <li>
-            <a href="./pages/adcriteria.php"
+            <a href="/pages/adcriteria.php"
    class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 <?php echo ($currentPage == 'adcriteria.php') ? 'bg-blue-100 text-blue-600' : ''; ?>">
    <i class="fas fa-home w-5 text-center"></i>
    <span class="nav-text">Admission Criteria</span>

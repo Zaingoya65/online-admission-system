@@ -28,8 +28,8 @@ if ($resend && !empty($email)) {
         if ($user) {
             $verification_link = "https://" . $_SERVER['HTTP_HOST'] . "/verify.php?token=" . $user['verification_token'];
             
-            $headers = "From: admissions@alhijrah.pk\r\n";
-            $headers .= "Reply-To: admissions@alhijrah.pk\r\n";
+            $headers = "From: admissions@alhijrah.edu.pk\r\n";
+            $headers .= "Reply-To: admissions@alhijrah.edu.pk\r\n";
             $headers .= "MIME-Version: 1.0\r\n";
             $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 

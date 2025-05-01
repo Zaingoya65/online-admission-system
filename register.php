@@ -51,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $verification_link = "https://" . $_SERVER['HTTP_HOST'] . "/verify.php?token=$token";
 
                 // Email headers
-                $headers = "From: admissions@alhijrah.pk\r\n";
-                $headers .= "Reply-To: admissions@alhijrah.pk\r\n";
+                $headers = "From: admissions@alhijrah.edu.pk\r\n";
+                $headers .= "Reply-To: admissions@alhijrah.edu.pk\r\n";
                 $headers .= "MIME-Version: 1.0\r\n";
                 $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 

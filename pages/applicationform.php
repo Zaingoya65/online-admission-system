@@ -61,6 +61,37 @@
             Personal Information
           </h3>
           
+
+          <div class="mb-6">
+    <label for="studentPhoto" class="block text-sm font-medium text-gray-700">
+      Student Photo (White Background) <span class="text-red-500">*</span>
+    </label>
+    <div class="mt-1 flex items-center">
+      <div class="relative">
+        <input type="file" name="studentPhoto" id="studentPhoto" required
+               accept="image/jpeg, image/png" 
+               class="hidden">
+        <label for="studentPhoto" class="cursor-pointer">
+          <div class="w-24 h-24 rounded-full bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center overflow-hidden">
+            <img id="photoPreview" src="#" alt="Preview" class="hidden w-full h-full object-cover">
+            <div id="uploadIcon" class="text-gray-500 text-center p-2">
+              <i class="fas fa-camera text-2xl mb-1"></i>
+              <p class="text-xs">Upload Photo</p>
+            </div>
+          </div>
+        </label>
+      </div>
+      <div class="ml-4 text-xs text-gray-500">
+        <p>• White background required</p>
+        <p>• Max size: 0.5MB</p>
+        <p>• JPG or PNG only</p>
+        <p>• Face clearly visible</p>
+      </div>
+    </div>
+    <p id="photoError" class="mt-1 text-xs text-red-600 hidden"></p>
+  </div>
+
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label for="fullName" class="block text-sm font-medium text-gray-700">
