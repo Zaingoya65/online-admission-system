@@ -158,7 +158,7 @@ if (isset($_GET['forgot'])) {
         <?php endif; ?>
 
         <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-            <form class="space-y-6" method="POST">
+            <form class="space-y-6" action="login.php" method="POST">
                 <div>
                     <label for="email" class="block text-sm/6 font-medium text-gray-900">Email address</label>
                     <div class="mt-2">
