@@ -93,35 +93,35 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
             </li>
             <li>
-              <a href="./pages/portalguidance.php" 
+              <a href="/pages/portalguidance.php" 
               class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 <?php echo $currentPage == 'portalguidance.php' ? 'bg-blue-100 text-blue-600' : ''; ?>">
                 <i class="fas fa-info-circle w-5 text-center"></i>
                 <span class="nav-text">Portal Guidance</span>
               </a>
             </li>
             <li>
-              <a href="./pages/applicationform.php" 
+              <a href="/pages/applicationform.php" 
               class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 <?php echo $currentPage == 'applicationform.php' ? 'bg-blue-100 text-blue-600' : ''; ?>">
                 <i class="fas fa-file-alt w-5 text-center"></i>
                 <span class="nav-text">Application Form</span>
               </a>
             </li>
             <li>
-              <a href="./pages/feepayment.php" 
+              <a href="/pages/feepayment.php" 
               class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 <?php echo $currentPage == 'feepayment.php' ? 'bg-blue-100 text-blue-600' : ''; ?>">
                 <i class="fas fa-money-bill-wave w-5 text-center"></i>
                 <span class="nav-text">Fee Payment</span>
               </a>
             </li>
             <li>
-              <a href="./pages/documentup.php" 
+              <a href="/pages/documentup.php" 
               class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 <?php echo $currentPage == 'documentup.php' ? 'bg-blue-100 text-blue-600' : ''; ?>">
                 <i class="fas fa-upload w-5 text-center"></i>
                 <span class="nav-text">Document Upload</span>
               </a>
             </li>
             <li>
-              <a href="./pages/appstatus.php" 
+              <a href="/pages/appstatus.php" 
               class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 <?php echo $currentPage == 'appstatus.php' ? 'bg-blue-100 text-blue-600' : ''; ?>">
                 <i class="fas fa-envelope w-5 text-center"></i>
                 <span class="nav-text">Application Status</span>
