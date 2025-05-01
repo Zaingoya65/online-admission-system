@@ -256,7 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             <p class="mt-6 text-center text-sm text-gray-600">
                 Already have an account? 
-                <a href="login.php" class="font-medium text-blue-600 hover:text-blue-500">Login here</a>
+                <a href="index.php" class="font-medium text-blue-600 hover:text-blue-500">Login here</a>
             </p>
         </div>
     </div>

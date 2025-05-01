@@ -60,8 +60,9 @@ if (!empty($token)) {
         $verificationStatus = $checkVerified->fetch();
 
         if ($verificationStatus && $verificationStatus['is_verified']) {
-            $already_verified = true;
-            $success = true;
+            // If already verified, redirect to login
+            header("Location: index.php");
+            exit;
         } elseif (!$verificationStatus) {
             $error = "Verification link is invalid.";
         } else {
@@ -74,9 +75,11 @@ if (!empty($token)) {
                 $updateStmt = $pdo->prepare("UPDATE registeredusers SET is_verified = 1, verification_token = NULL, token_expiry = NULL WHERE id = ?");
                 $updateStmt->execute([$user['id']]);
                 
-                $success = true;
+                // Set session flag and redirect to prevent refresh issues
                 $_SESSION['verified_email'] = $user['email'];
                 $_SESSION['just_verified'] = true;
+                header("Location: index.php");
+                exit;
             } else {
                 $error = "Verification link has expired.";
             }
@@ -84,6 +87,23 @@ if (!empty($token)) {
     } catch (PDOException $e) {
         error_log("Database Error: " . $e->getMessage());
         $error = "An error occurred during verification.";
+    }
+}
+
+// If pending verification page is refreshed, show appropriate message
+if ($pending && !empty($email)) {
+    try {
+        $stmt = $pdo->prepare("SELECT is_verified FROM registeredusers WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+        
+        if ($user && $user['is_verified']) {
+            // If already verified, redirect to login
+            header("Location: index.php");
+            exit;
+        }
+    } catch (PDOException $e) {
+        error_log("Database Error: " . $e->getMessage());
     }
 }
 ?>
@@ -95,12 +115,6 @@ if (!empty($token)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Verification - AHRSC</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        // Prevent form resubmission when refreshing verified page
-        if (window.history.replaceState && <?= $success ? 'true' : 'false' ?>) {
-            window.history.replaceState(null, null, window.location.href);
-        }
-    </script>
 </head>
 <body class="bg-gray-50">
     <div class="min-h-screen flex items-center justify-center p-4">
@@ -149,25 +163,7 @@ if (!empty($token)) {
                         Resend Verification Email
                     </a>
                 </div>
-            <?php elseif ($success): ?>
-                <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm text-green-700">
-                                <?= $already_verified ? 'Your email was already verified.' : 'Your email has been successfully verified!' ?>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <a href="login.php" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    Proceed to Login
-                </a>
-            <?php else: ?>
+            <?php elseif (!empty($error)): ?>
                 <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
                     <div class="flex">
                         <div class="flex-shrink-0">
