@@ -190,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_otp'])) {
         alert(result.message);
         window.location.href = 'login.php';
     }
-}
+
 
                 } else {
                     // Display errors
