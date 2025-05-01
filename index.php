@@ -171,7 +171,7 @@ if (isset($_GET['forgot'])) {
                     <div class="flex items-center justify-between">
                         <label for="password" class="block text-sm/6 font-medium text-gray-900">Password</label>
                         <div class="text-sm">
-                            <a href="reset-password.php" onclick="showForgotPassword()" class="font-semibold text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+                            <a href="javascript:void(0);" onclick="showForgotPassword()" class="font-semibold text-indigo-600 hover:text-indigo-500">Forgot password?</a>
                         </div>
                     </div>
                     <div class="mt-2">
