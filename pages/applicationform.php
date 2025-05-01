@@ -225,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <input type="text" name="fullName" id="fullName" required
                     class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                    placeholder="Enter full name">
+                    placeholder="Enter full name" value="<?php echo htmlspecialchars($userData['full_name'] ?? ''); ?>">
               </div>
             </div>
             
@@ -253,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <input type="text" name="bForm" id="bForm" required
                     class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                    placeholder="XXXXX-XXXXXXX-X">
+                    placeholder="XXXXX-XXXXXXX-X" value="<?php echo htmlspecialchars($userData['cnic'] ?? ''); ?>">
               </div>
             </div>
             
@@ -430,7 +430,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <input type="email" name="email" id="email" required
                     class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                    placeholder="your@email.com">
+                    placeholder="your@email.com" value="<?php echo htmlspecialchars($userData['email'] ?? ''); ?>">
               </div>
             </div>
           </div>
