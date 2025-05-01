@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo json_encode([
                         'success' => true, 
                         'message' => 'Registration successful! Please check your email to verify your account.',
-                        'redirect' => 'pending-verification.php'
+                        'redirect' => 'verify.php?pending=1&email=' . urlencode($email)
                     ]);
                     exit;
                 } else {

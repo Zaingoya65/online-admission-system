@@ -11,6 +11,8 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $token = $_GET['token'] ?? '';
+$pending = isset($_GET['pending']);
+$email = $_GET['email'] ?? '';
 $success = false;
 $error = '';
 
@@ -46,34 +48,74 @@ if (!empty($token)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Verification - AHRSC</title>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
-        .error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
-        .btn { display: inline-block; background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; }
-        .btn:hover { background: #0069d9; }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div class="container">
-        <h1>Email Verification</h1>
-        
-        <?php if ($success): ?>
-            <div class="success">
-                <p>Your email has been successfully verified!</p>
-                <p>You can now login to your account.</p>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-md overflow-hidden p-8">
+            <div class="text-center mb-6">
+                <img src="./assets/images/logo.png" alt="AHRSC Logo" class="h-16 mx-auto">
+                <h1 class="mt-4 text-2xl font-bold text-gray-800">Email Verification</h1>
             </div>
-            <a href="login.php" class="btn">Proceed to Login</a>
-        <?php else: ?>
-            <div class="error">
-                <p><?= htmlspecialchars($error) ?></p>
-            </div>
-            <div class="mt-4">
-                <p>Need help? <a href="contact.php">Contact support</a></p>
-                <p>Or <a href="register.php">register again</a></p>
-            </div>
-        <?php endif; ?>
+            
+            <?php if ($pending): ?>
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                We've sent a verification link to <strong><?= htmlspecialchars($email) ?></strong>. 
+                                Please check your email and click the link to verify your account.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600">Didn't receive the email? <a href="#" class="text-blue-600 hover:underline">Resend verification email</a></p>
+                </div>
+            <?php elseif ($success): ?>
+                <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-green-700">
+                                Your email has been successfully verified!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <a href="login.php" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Proceed to Login
+                </a>
+            <?php else: ?>
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700">
+                                <?= htmlspecialchars($error) ?>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600">Need help? <a href="contact.php" class="text-blue-600 hover:underline">Contact support</a></p>
+                    <p class="mt-2 text-sm text-gray-600">Or <a href="register.php" class="text-blue-600 hover:underline">register again</a></p>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 </body>
 </html>
