@@ -91,6 +91,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $errors['general'] = 'Failed to send verification email. Please try again later.';
                 }
             }
+
+
+
+            
+
+            if (mail($email, $subject, $message, $headers)) {
+                echo json_encode([
+                    'success' => true, 
+                    'message' => 'Registration successful! Please check your email to verify your account.',
+                    'redirect' => 'verify.php?pending=1&email=' . urlencode($email)
+                ]);
+                exit;
+            } else {
+                error_log("Failed to send verification email to $email");
+                $errors['general'] = 'Failed to send verification email. Please try again later.';
+            }
+
+
+
+
+
+
+
         } catch (PDOException $e) {
             error_log("Database Error: " . $e->getMessage());
             $errors['general'] = 'Registration failed. Please try again.';

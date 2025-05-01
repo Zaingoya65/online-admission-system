@@ -13,32 +13,78 @@ if (session_status() === PHP_SESSION_NONE) {
 $token = $_GET['token'] ?? '';
 $pending = isset($_GET['pending']);
 $email = $_GET['email'] ?? '';
+$resend = isset($_GET['resend']);
 $success = false;
 $error = '';
+$already_verified = false;
 
-if (!empty($token)) {
+// Handle resend verification email
+if ($resend && !empty($email)) {
     try {
-        // Check if token is valid and not expired
-        $stmt = $pdo->prepare("SELECT id, email FROM registeredusers WHERE verification_token = ? AND token_expiry > NOW()");
-        $stmt->execute([$token]);
+        $stmt = $pdo->prepare("SELECT verification_token FROM registeredusers WHERE email = ? AND is_verified = 0");
+        $stmt->execute([$email]);
         $user = $stmt->fetch();
 
         if ($user) {
-            // Update user as verified
-            $updateStmt = $pdo->prepare("UPDATE registeredusers SET is_verified = 1, verification_token = NULL, token_expiry = NULL WHERE id = ?");
-            $updateStmt->execute([$user['id']]);
+            $verification_link = "https://" . $_SERVER['HTTP_HOST'] . "/verify.php?token=" . $user['verification_token'];
             
-            $success = true;
-            $_SESSION['verified_email'] = $user['email'];
+            $headers = "From: admissions@alhijrah.pk\r\n";
+            $headers .= "Reply-To: admissions@alhijrah.pk\r\n";
+            $headers .= "MIME-Version: 1.0\r\n";
+            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+
+            $subject = 'Verify Your Email - AHRSC Admissions';
+            $message = "Your verification link: $verification_link";
+
+            if (mail($email, $subject, $message, $headers)) {
+                header("Location: verify.php?pending=1&email=" . urlencode($email) . "&resent=1");
+                exit;
+            } else {
+                $error = "Failed to resend verification email.";
+            }
         } else {
-            $error = "Verification link is invalid or has expired.";
+            $error = "Email already verified or doesn't exist.";
         }
     } catch (PDOException $e) {
         error_log("Database Error: " . $e->getMessage());
-        $error = "An error occurred during verification. Please try again.";
+        $error = "An error occurred while resending verification email.";
     }
-} else {
-    $error = "Invalid verification link.";
+}
+
+// Handle email verification
+if (!empty($token)) {
+    try {
+        // Check if user is already verified
+        $checkVerified = $pdo->prepare("SELECT is_verified FROM registeredusers WHERE verification_token = ?");
+        $checkVerified->execute([$token]);
+        $verificationStatus = $checkVerified->fetch();
+
+        if ($verificationStatus && $verificationStatus['is_verified']) {
+            $already_verified = true;
+            $success = true;
+        } elseif (!$verificationStatus) {
+            $error = "Verification link is invalid.";
+        } else {
+            // Verify the user
+            $stmt = $pdo->prepare("SELECT id, email FROM registeredusers WHERE verification_token = ? AND token_expiry > NOW()");
+            $stmt->execute([$token]);
+            $user = $stmt->fetch();
+
+            if ($user) {
+                $updateStmt = $pdo->prepare("UPDATE registeredusers SET is_verified = 1, verification_token = NULL, token_expiry = NULL WHERE id = ?");
+                $updateStmt->execute([$user['id']]);
+                
+                $success = true;
+                $_SESSION['verified_email'] = $user['email'];
+                $_SESSION['just_verified'] = true;
+            } else {
+                $error = "Verification link has expired.";
+            }
+        }
+    } catch (PDOException $e) {
+        error_log("Database Error: " . $e->getMessage());
+        $error = "An error occurred during verification.";
+    }
 }
 ?>
 
@@ -49,6 +95,12 @@ if (!empty($token)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Verification - AHRSC</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Prevent form resubmission when refreshing verified page
+        if (window.history.replaceState && <?= $success ? 'true' : 'false' ?>) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+    </script>
 </head>
 <body class="bg-gray-50">
     <div class="min-h-screen flex items-center justify-center p-4">
@@ -58,6 +110,23 @@ if (!empty($token)) {
                 <h1 class="mt-4 text-2xl font-bold text-gray-800">Email Verification</h1>
             </div>
             
+            <?php if (isset($_GET['resent'])): ?>
+                <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-green-700">
+                                Verification email has been resent successfully!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <?php if ($pending): ?>
                 <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
                     <div class="flex">
@@ -75,7 +144,10 @@ if (!empty($token)) {
                     </div>
                 </div>
                 <div class="text-center">
-                    <p class="text-sm text-gray-600">Didn't receive the email? <a href="#" class="text-blue-600 hover:underline">Resend verification email</a></p>
+                    <p class="text-sm text-gray-600 mb-4">Didn't receive the email?</p>
+                    <a href="verify.php?resend=1&email=<?= urlencode($email) ?>" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                        Resend Verification Email
+                    </a>
                 </div>
             <?php elseif ($success): ?>
                 <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
@@ -87,7 +159,7 @@ if (!empty($token)) {
                         </div>
                         <div class="ml-3">
                             <p class="text-sm text-green-700">
-                                Your email has been successfully verified!
+                                <?= $already_verified ? 'Your email was already verified.' : 'Your email has been successfully verified!' ?>
                             </p>
                         </div>
                     </div>
