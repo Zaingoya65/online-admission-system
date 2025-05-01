@@ -1,4 +1,4 @@
-<?php include 'session_auth.php'; ?>
+<?php include '../session_auth.php'; ?>
 <!doctype html>
 <html>
 <head>
