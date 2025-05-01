@@ -128,6 +128,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   // exit;
 }
 
+// Fetch user data from registeredusers table
+$userData = [];
+try {
+    $stmt = $pdo->prepare("SELECT full_name, cnic, email FROM registeredusers WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // Handle error or set default empty values
+    $userData = ['full_name' => '', 'cnic' => '', 'email' => ''];
+}
 ?>
 
 <!doctype html>
