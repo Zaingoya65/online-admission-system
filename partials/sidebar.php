@@ -140,7 +140,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
               </a>
             </li>
             <li>
-              <a href="logout.php" class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 text-red-600">
+              <a href="../logout.php" class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 text-red-600">
                 <i class="fas fa-sign-out-alt w-5 text-center"></i>
                 <span class="nav-text">Logout</span>
               </a>
