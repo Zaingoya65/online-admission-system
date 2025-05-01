@@ -110,10 +110,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_otp'])) {
                 try {
                     //Server settings
                     $mail->isSMTP();
-                    $mail->Host       = 'smtp.hostinger.com'; // Hostinger SMTP
+                  
                     $mail->SMTPAuth   = true;
-                    $mail->Username   = 'your_email@yourdomain.com'; // your email on Hostinger
-                    $mail->Password   = 'your_email_password'; // your email's password
+                    $mail->setFrom('admissions@alhijrah.pk', 'AHRSC Admissions');
+
                     $mail->SMTPSecure = 'tls';
                     $mail->Port       = 587;
                 
