@@ -135,10 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_otp'])) {
                 // Return success with OTP verification flag
                 echo json_encode([
                     'success' => true, 
-                    'requires_otp' => true,
-                    'message' => 'Registration pending OTP verification'
+                    'redirect' => 'verify.php'
                 ]);
                 exit;
+                ;
             }
         } catch (PDOException $e) {
             $errors['general'] = 'Database error: ' . $e->getMessage();
@@ -184,13 +184,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_otp'])) {
                 const result = await response.json();
                 
                 if (result.success) {
-                    if (result.requires_otp) {
-                        // Switch to OTP verification UI
-                        showOtpVerification();
-                    } else {
-                        alert(result.message);
-                        window.location.href = 'login.php';
-                    }
+    if (result.redirect) {
+        window.location.href = result.redirect;
+    } else {
+        alert(result.message);
+        window.location.href = 'login.php';
+    }
+}
+
                 } else {
                     // Display errors
                     if (result.errors) {
