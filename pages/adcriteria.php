@@ -1,4 +1,14 @@
-<?php include '../session_auth.php'; ?>
+<?php
+include '../session_auth.php';
+session_start();
+
+// If user has already accepted criteria, redirect to portalguidance.php
+if (isset($_SESSION['criteria_met']) && $_SESSION['criteria_met'] === true) {
+    header("Location: /pages/portalguidance.php");
+    exit();
+}
+?>
+
 <!doctype html>
 <html>
 <head>
@@ -198,9 +208,19 @@
           <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300">
             <i class="fas fa-file-alt mr-2"></i> Download Criteria PDF
           </button>
-          <button class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300">
-            <i class="fas fa-check-circle mr-2"></i> I Meet All Requirements
-          </button>
+          <form method="post">
+  <button name="accept_criteria" type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300">
+    <i class="fas fa-check-circle mr-2"></i> I Meet All Requirements
+  </button>
+</form>
+<?php
+if (isset($_POST['accept_criteria'])) {
+    $_SESSION['criteria_met'] = true;
+    header("Location: /pages/portalguidance.php");
+    exit();
+}
+?>
+
          
         </div>
       </div>
