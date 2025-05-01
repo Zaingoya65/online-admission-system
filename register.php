@@ -6,13 +6,6 @@ ini_set('error_log', __DIR__ . '/php-error.log');
 
 include './db/db_connection.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-require './phpmailer/src/Exception.php';
-require './phpmailer/src/PHPMailer.php';
-require './phpmailer/src/SMTP.php';
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -57,26 +50,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Generate verification link
                 $verification_link = "https://" . $_SERVER['HTTP_HOST'] . "/verify.php?token=$token";
 
-                // Send verification email
-                $mail = new PHPMailer(true);
-                try {
-                    // Server settings
-                    $mail->isSMTP();
-                    $mail->Host       = 'smtp.example.com'; // Your SMTP server
-                    $mail->SMTPAuth   = true;
-                    $mail->Username   = 'your_email@example.com'; // SMTP username
-                    $mail->Password   = 'your_password'; // SMTP password
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                    $mail->Port       = 587;
+                // Email headers
+                $headers = "From: admissions@alhijrah.pk\r\n";
+                $headers .= "Reply-To: admissions@alhijrah.pk\r\n";
+                $headers .= "MIME-Version: 1.0\r\n";
+                $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 
-                    // Recipients
-                    $mail->setFrom('admissions@alhijrah.pk', 'AHRSC Admissions');
-                    $mail->addAddress($email, $full_name);
-
-                    // Content
-                    $mail->isHTML(true);
-                    $mail->Subject = 'Verify Your Email - AHRSC Admissions';
-                    $mail->Body    = "
+                // Email subject and body
+                $subject = 'Verify Your Email - AHRSC Admissions';
+                $message = "
+                    <html>
+                    <head>
+                        <title>Email Verification</title>
+                    </head>
+                    <body>
                         <h2>Email Verification</h2>
                         <p>Dear $full_name,</p>
                         <p>Thank you for registering with AHRSC Admissions Portal. Please verify your email address by clicking the button below:</p>
@@ -87,19 +74,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <code>$verification_link</code></p>
                         <p>This link will expire in 24 hours.</p>
                         <p>If you didn't request this registration, please ignore this email.</p>
-                    ";
-                    $mail->AltBody = "Please verify your email by visiting this link: $verification_link";
+                    </body>
+                    </html>
+                ";
 
-                    $mail->send();
-                    
+                // Send email
+                if (mail($email, $subject, $message, $headers)) {
                     echo json_encode([
                         'success' => true, 
                         'message' => 'Registration successful! Please check your email to verify your account.',
                         'redirect' => 'pending-verification.php'
                     ]);
                     exit;
-                } catch (Exception $e) {
-                    error_log("Mailer Error: " . $mail->ErrorInfo);
+                } else {
+                    error_log("Failed to send verification email to $email");
                     $errors['general'] = 'Failed to send verification email. Please try again later.';
                 }
             }
