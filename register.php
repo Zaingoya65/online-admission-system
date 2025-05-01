@@ -1,281 +1,132 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // DON'T display on page
-ini_set('log_errors', 1);     // LOG errors instead
-ini_set('error_log', __DIR__ . '/php-error.log'); // Log errors into a file
-
-
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/php-error.log');
 
 include './db/db_connection.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// Start session
+require './phpmailer/src/Exception.php';
+require './phpmailer/src/PHPMailer.php';
+require './phpmailer/src/SMTP.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Set Content-Type to JSON **only when** it's a POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-    error_reporting(E_ERROR | E_PARSE);
-}
 
-
-
-// Handle OTP verification
-if (isset($_POST['verify_otp'])) {
-    $email = $_SESSION['register_email'] ?? '';
-    $user_otp = $_POST['otp'] ?? '';
-    
-    if (empty($email) || empty($user_otp)) {
-        echo json_encode(['success' => false, 'message' => 'Invalid request']);
-        exit;
-    }
-    
-    try {
-        // Check if OTP matches and isn't expired
-        $stmt = $pdo->prepare("SELECT id FROM registeredusers WHERE email = ? AND verification_token = ? AND token_expiry > NOW()");
-        $stmt->execute([$email, $user_otp]);
-        
-        if ($stmt->rowCount() > 0) {
-            // Mark user as verified
-            $stmt = $pdo->prepare("UPDATE registeredusers SET is_verified = TRUE, verification_token = NULL, token_expiry = NULL WHERE email = ?");
-            $stmt->execute([$email]);
-            
-            // Clear session data
-            unset($_SESSION['register_email']);
-            unset($_SESSION['otp_verified']);
-            
-            echo json_encode(['success' => true, 'message' => 'Email verified successfully!']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Invalid or expired OTP']);
-        }
-    } catch (PDOException $e) {
-        echo json_encode(['success' => false, 'message' => 'Database error']);
-    }
-    exit;
-}
-
-// Handle form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_otp'])) {
-    // Validate and sanitize input
     $errors = [];
-    
+
     $full_name = trim($_POST['name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $cnic = trim($_POST['cnic'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['cpassword'] ?? '';
-    
-    // Validate inputs (same as before)
-    // ... [keep all your existing validation code] ...
-    
-    // If no errors, proceed with registration
+
+    // Validations
+    if (empty($full_name)) $errors['name'] = 'Name is required.';
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors['email'] = 'Invalid email address.';
+    if (empty($cnic)) $errors['cnic'] = 'CNIC/B-form is required.';
+    if (empty($password) || strlen($password) < 6) $errors['password'] = 'Password must be at least 6 characters.';
+    if ($password !== $confirm_password) $errors['cpassword'] = 'Passwords do not match.';
+
     if (empty($errors)) {
         try {
-            // Check if email or CNIC already exists
+            // Check if user exists
             $stmt = $pdo->prepare("SELECT id FROM registeredusers WHERE email = ? OR cnic = ?");
             $stmt->execute([$email, $cnic]);
-            
+
             if ($stmt->rowCount() > 0) {
-                $errors['general'] = 'Email or CNIC already registered';
-				
-
+                $errors['general'] = 'Email or CNIC already registered.';
             } else {
-                // Hash password
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                
-                // Generate OTP (6 digits)
-                $otp = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
-                
-                // Insert new user (not verified yet)
-                $stmt = $pdo->prepare("INSERT INTO registeredusers (full_name, email, cnic, password, verification_token, token_expiry) 
-                                      VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 15 MINUTE))");
-                $stmt->execute([$full_name, $email, $cnic, $hashed_password, $otp]);
-                
-                // Store email in session for verification
-                $_SESSION['register_email'] = $email;
-                
-                // Send OTP to user (in production, use email/SMS service)
-                // This is just a simulation - in real app, use PHPMailer or similar
-              
-                require './phpmailer/src/Exception.php';
-                require './phpmailer/src/PHPMailer.php';
-                require './phpmailer/src/SMTP.php';
-                
-                $mail = new PHPMailer(true);
-                
-                try {
-                    //Server settings
-                    $mail->isSMTP();
-                  
-                    $mail->SMTPAuth   = true;
-                    $mail->setFrom('admissions@alhijrah.pk', 'AHRSC Admissions');
+                $token = bin2hex(random_bytes(32));
+                $expiry = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
-                    $mail->SMTPSecure = 'tls';
+                $stmt = $pdo->prepare("INSERT INTO registeredusers (full_name, email, cnic, password, verification_token, token_expiry) 
+                                     VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$full_name, $email, $cnic, $hashed_password, $token, $expiry]);
+
+                $_SESSION['register_email'] = $email;
+
+                // Generate verification link
+                $verification_link = "https://" . $_SERVER['HTTP_HOST'] . "/verify.php?token=$token";
+
+                // Send verification email
+                $mail = new PHPMailer(true);
+                try {
+                    // Server settings
+                    $mail->isSMTP();
+                    $mail->Host       = 'smtp.example.com'; // Your SMTP server
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = 'your_email@example.com'; // SMTP username
+                    $mail->Password   = 'your_password'; // SMTP password
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = 587;
-                
-                    //Recipients
+
+                    // Recipients
                     $mail->setFrom('admissions@alhijrah.pk', 'AHRSC Admissions');
-                    $mail->addAddress($email); // Recipient
-                
-                    //Content
+                    $mail->addAddress($email, $full_name);
+
+                    // Content
                     $mail->isHTML(true);
-                    $mail->Subject = 'Your OTP for AHRSC Registration';
-                    $mail->Body    = "Your One-Time Password (OTP) is: <b>$otp</b><br><br>This code will expire in 15 minutes.";
-                
+                    $mail->Subject = 'Verify Your Email - AHRSC Admissions';
+                    $mail->Body    = "
+                        <h2>Email Verification</h2>
+                        <p>Dear $full_name,</p>
+                        <p>Thank you for registering with AHRSC Admissions Portal. Please verify your email address by clicking the button below:</p>
+                        <p style='text-align: center; margin: 20px 0;'>
+                            <a href='$verification_link' style='background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Verify Email</a>
+                        </p>
+                        <p>Or copy and paste this link into your browser:<br>
+                        <code>$verification_link</code></p>
+                        <p>This link will expire in 24 hours.</p>
+                        <p>If you didn't request this registration, please ignore this email.</p>
+                    ";
+                    $mail->AltBody = "Please verify your email by visiting this link: $verification_link";
+
                     $mail->send();
+                    
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => 'Registration successful! Please check your email to verify your account.',
+                        'redirect' => 'pending-verification.php'
+                    ]);
+                    exit;
                 } catch (Exception $e) {
-                    error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+                    error_log("Mailer Error: " . $mail->ErrorInfo);
+                    $errors['general'] = 'Failed to send verification email. Please try again later.';
                 }
-                
-                
-                // Return success with OTP verification flag
-                echo json_encode([
-                    'success' => true, 
-                    'redirect' => 'verify.php'
-                ]);
-                exit;
-                ;
             }
         } catch (PDOException $e) {
-            $errors['general'] = 'Database error: ' . $e->getMessage();
+            error_log("Database Error: " . $e->getMessage());
+            $errors['general'] = 'Registration failed. Please try again.';
         }
     }
-    
-    // If there are errors, return them
+
     echo json_encode(['success' => false, 'errors' => $errors]);
     exit;
 }
-
-// If not a POST request, show the appropriate form
 ?>
+
 <!doctype html>
 <html>
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>Regist  Alhijrah AHRSC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Register - Alhijrah AHRSC</title>
     <script>
-        let otpVerificationMode = false;
-        
-        async function handleSubmit(event) {
-            event.preventDefault();
-            
-            const form = event.target;
-            const formData = new FormData(form);
-			const submitBtn = form.querySelector('button');
-
-            
-            // Disable button during submission
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Processing...';
-            
-            try {
-                const endpoint = otpVerificationMode ? 'register.php?verify=1' : 'register.php';
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-    if (result.redirect) {
-        window.location.href = result.redirect;
-    } else {
-        alert(result.message);
-        window.location.href = 'login.php';
-    }
-
-
-                } else {
-                    // Display errors
-                    if (result.errors) {
-						Object.keys(result.errors).forEach(field => {
-    const input = form.querySelector(`[name="${field}"]`);
-    
-    if (input) {
-        const errorElement = document.createElement('p');
-        errorElement.className = 'mt-1 text-sm text-red-600';
-        errorElement.textContent = result.errors[field];
-
-        const existingError = input.nextElementSibling;
-        if (existingError && existingError.className.includes('text-red-600')) {
-            existingError.remove();
-        }
-
-        input.insertAdjacentElement('afterend', errorElement);
-    } else {
-        // Fallback for general errors or unknown fields
-        alert(result.errors[field]);
-    }
-});
-
-                            
-                          
-                    } else if (result.message) {
-                        alert(result.message);
-                    }
-                }
-            } catch (error) {
-                alert('An error occurred. Please try again.');
-                console.error(error);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = otpVerificationMode ? 'Verify OTP' : 'Create an account';
-            }
-        }
-        
-        function showOtpVerification() {
-            otpVerificationMode = true;
+        document.addEventListener('DOMContentLoaded', function() {
             const form = document.querySelector('form');
-            
-            // Change form title
-            document.querySelector('h2').innerHTML = 'Verify Email <span class="text-blue-600 font-medium hover:underline ml-1">Enter OTP</span>';
-            
-            // Hide all form elements except OTP field
-            const allInputs = form.querySelectorAll('div:not(.otp-field)');
-            allInputs.forEach(el => el.style.display = 'none');
-            
-            // Create OTP field if not exists
-            let otpField = form.querySelector('.otp-field');
-            if (!otpField) {
-                otpField = document.createElement('div');
-                otpField.className = 'otp-field mt-6';
-                otpField.innerHTML = `
-                    <label for="otp" class="block text-sm/6 font-medium text-gray-900">OTP (Check your email)</label>
-                    <div class="mt-2">
-                        <input type="text" name="otp" id="otp" required 
-                               class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 
-                               outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 
-                               focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6">
-                    </div>
-                    <p class="text-sm text-gray-500 mt-2">We've sent a 6-digit code to your email address.</p>
-                    <input type="hidden" name="verify_otp" value="1">
-                `;
-                form.insertBefore(otpField, form.querySelector('button').parentElement);
-            } else {
-                otpField.style.display = 'block';
-            }
-            
-            // Update button text
-            form.querySelector('button').textContent = 'Verify OTP';
-        }
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.querySelector('form');
-    if (form) {
-        console.log('Form event listener added'); 
-        form.addEventListener('submit', handleSubmit);
-    } else {
-        console.error('Form not found');
-    }
-            // Add input masking for CNIC
             const cnicInput = document.getElementById('cnic');
+
+            // CNIC formatting
             cnicInput.addEventListener('input', function(e) {
                 let value = e.target.value.replace(/\D/g, '');
                 
@@ -291,55 +142,111 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_otp'])) {
                 
                 e.target.value = value;
             });
+
+            // Form submission
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                
+                const formData = new FormData(form);
+                const submitBtn = form.querySelector('button[type="submit"]');
+                
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
+                
+                try {
+                    const response = await fetch('register.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        if (result.redirect) {
+                            window.location.href = result.redirect;
+                        } else {
+                            alert(result.message);
+                        }
+                    } else {
+                        // Clear previous errors
+                        document.querySelectorAll('.error-message').forEach(el => el.remove());
+                        
+                        if (result.errors) {
+                            Object.entries(result.errors).forEach(([field, message]) => {
+                                const input = form.querySelector(`[name="${field}"]`);
+                                if (input) {
+                                    const errorElement = document.createElement('p');
+                                    errorElement.className = 'error-message mt-1 text-sm text-red-600';
+                                    errorElement.textContent = message;
+                                    input.closest('div').appendChild(errorElement);
+                                }
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create an account';
+                }
+            });
         });
     </script>
 </head>
-
-<body>
-    <div class="flex flex-col justify-center p-4">
-        <div class="max-w-md w-full mx-auto border border-slate-300 rounded-2xl p-8">
-            <div class="text-center mb-6">
-                <a href="javascript:void(0)"><img src="./assets/images/logo.png" alt="logo" class="w-30 inline-block" /> </a>
-                <h2 class="mt-1">
-                    Register<span class="text-blue-600 font-medium hover:underline ml-1">AHRSC Admission Portal</span>!
-                </h2> 
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-md overflow-hidden p-8">
+            <div class="text-center mb-8">
+                <img src="./assets/images/logo.png" alt="AHRSC Logo" class="h-16 mx-auto">
+                <h2 class="mt-4 text-2xl font-bold text-gray-800">
+                    Register for <span class="text-blue-600">AHRSC Admissions</span>
+                </h2>
             </div>
-            <form>
+            
+            <form class="space-y-4">
                 <div>
-                    <label for="name" class="block text-sm/6 font-medium text-gray-900">Full Name</label>
-                    <div class="mt-2">
-                        <input type="text" name="name" id="name" required class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"> 
-                    </div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input type="text" name="name" id="name" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
+                
                 <div>
-                    <label for="email" class="block text-sm/6 font-medium text-gray-900">Email address</label>
-                    <div class="mt-2">
-                        <input type="email" name="email" id="email" autocomplete="email" required class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"> 
-                    </div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" name="email" id="email" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
+                
                 <div>
-                    <label for="cnic" class="block text-sm/6 font-medium text-gray-900">B-form/CNIC</label>
-                    <div class="mt-2">
-                        <input type="text" name="cnic" id="cnic" required placeholder="XXXXX-XXXXXXX-X" class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"> 
-                    </div>
+                    <label for="cnic" class="block text-sm font-medium text-gray-700">B-form/CNIC</label>
+                    <input type="text" name="cnic" id="cnic" required placeholder="XXXXX-XXXXXXX-X"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
+                
                 <div>
-                    <label for="password" class="block text-sm/6 font-medium text-gray-900">Password</label>
-                    <div class="mt-2">
-                        <input type="password" name="password" id="password" required class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"> 
-                    </div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" name="password" id="password" required minlength="6"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
+                
                 <div>
-                    <label for="cpassword" class="block text-sm/6 font-medium text-gray-900">Confirm password</label>
-                    <div class="mt-2">
-                        <input type="password" name="cpassword" id="cpassword" required class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"> 
-                    </div>
+                    <label for="cpassword" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                    <input type="password" name="cpassword" id="cpassword" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="mt-12">
-                    <button type="submit" class="w-full py-3 px-4 text-sm tracking-wider font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"> Create an account </button>
+                
+                <div class="pt-4">
+                    <button type="submit" 
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Create an account
+                    </button>
                 </div>
-                <p class="text-slate-800 text-sm mt-6 text-center">Already have an account? <a href="login.php" class="text-blue-600 font-medium hover:underline ml-1">Login here</a></p>
             </form>
+            
+            <p class="mt-6 text-center text-sm text-gray-600">
+                Already have an account? 
+                <a href="login.php" class="font-medium text-blue-600 hover:text-blue-500">Login here</a>
+            </p>
         </div>
     </div>
 </body>
