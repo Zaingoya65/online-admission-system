@@ -11,7 +11,6 @@ $token = $_GET['token'] ?? '';
 $error = '';
 $success = '';
 
-// Handle password reset form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token = $_POST['token'] ?? '';
     $password = $_POST['password'] ?? '';
@@ -23,7 +22,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Passwords do not match.';
     } else {
         try {
-            // Check if token is valid and not expired
             $stmt = $pdo->prepare("SELECT id FROM registeredusers WHERE reset_token = ? AND token_expiry > NOW()");
             $stmt->execute([$token]);
             $user = $stmt->fetch();
@@ -38,103 +36,97 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Invalid or expired reset link. Please request a new password reset.';
             }
         } catch (PDOException $e) {
-            error_log("Database Error: " . $e->getMessage());
+            error_log("Password Reset Error: " . $e->getMessage());
             $error = 'An error occurred. Please try again.';
         }
     }
 } elseif (!empty($token)) {
-    // Verify token when page loads
     try {
         $stmt = $pdo->prepare("SELECT id FROM registeredusers WHERE reset_token = ? AND token_expiry > NOW()");
         $stmt->execute([$token]);
-        $user = $stmt->fetch();
-
-        if (!$user) {
+        if (!$stmt->fetch()) {
             $error = 'Invalid or expired reset link. Please request a new password reset.';
         }
     } catch (PDOException $e) {
-        error_log("Database Error: " . $e->getMessage());
+        error_log("Token Verification Error: " . $e->getMessage());
         $error = 'An error occurred. Please try again.';
     }
 } else {
     $error = 'Invalid reset link.';
 }
 ?>
-
 <!doctype html>
 <html>
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>Reset Password - Alhijrah AHRSC</title>
+    <title>Reset Password - AHRSC</title>
 </head>
-<body>
-    <div class="mt-8 min-h-full flex-col justify-center px-6 py-12 lg:px-8 max-w-md w-full mx-auto border border-slate-300 rounded-2xl p-8">
-        <div class="sm:mx-auto sm:w-full sm:max-w-sm">
-            <img class="mx-auto h-30 w-auto" src="assets/images/logo.png" alt="AL-Hijrah logo">
-            <h3 class="mt-1 text-center text-2xl/9 font-bold tracking-tight text-gray-900">Reset Password</h3>
-        </div>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-md overflow-hidden p-8">
+            <div class="text-center mb-8">
+                <img src="./assets/images/logo.png" alt="AHRSC Logo" class="h-16 mx-auto">
+                <h2 class="mt-4 text-2xl font-bold text-gray-800">Reset Password</h2>
+            </div>
 
-        <?php if (!empty($error)): ?>
-            <div class="mt-4 bg-red-50 border-l-4 border-red-400 p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-red-700"><?= htmlspecialchars($error) ?></p>
+            <?php if ($error): ?>
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700"><?= htmlspecialchars($error) ?></p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        <?php endif; ?>
+            <?php endif; ?>
 
-        <?php if (!empty($success)): ?>
-            <div class="mt-4 bg-green-50 border-l-4 border-green-400 p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-green-700"><?= htmlspecialchars($success) ?></p>
+            <?php if ($success): ?>
+                <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-green-700"><?= htmlspecialchars($success) ?></p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="mt-6 text-center">
-                <a href="login.php" class="font-semibold text-indigo-600 hover:text-indigo-500">Back to Login</a>
-            </div>
-        <?php elseif (empty($error)): ?>
-            <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-                <form class="space-y-6" action="reset-password.php" method="POST">
+                <div class="text-center">
+                    <a href="login.php" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Login Now</a>
+                </div>
+            <?php elseif (empty($error)): ?>
+                <form class="space-y-4" method="POST">
                     <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
                     
                     <div>
-                        <label for="password" class="block text-sm/6 font-medium text-gray-900">New Password</label>
-                        <div class="mt-2">
-                            <input type="password" name="password" id="password" required minlength="6"
-                                class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6">
-                        </div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">New Password</label>
+                        <input type="password" name="password" id="password" required minlength="6"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
 
                     <div>
-                        <label for="confirm_password" class="block text-sm/6 font-medium text-gray-900">Confirm New Password</label>
-                        <div class="mt-2">
-                            <input type="password" name="confirm_password" id="confirm_password" required minlength="6"
-                                class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6">
-                        </div>
+                        <label for="confirm_password" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                        <input type="password" name="confirm_password" id="confirm_password" required minlength="6"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
 
-                    <div>
-                        <button type="submit"
-                            class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Reset Password</button>
+                    <div class="pt-4">
+                        <button type="submit" 
+                                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Reset Password
+                        </button>
                     </div>
                 </form>
-            </div>
-        <?php endif; ?>
+            <?php endif; ?>
+        </div>
     </div>
 </body>
 </html>
