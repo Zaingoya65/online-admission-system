@@ -142,30 +142,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Update existing application
                 $data['id'] = $_GET['edit'];
                 $stmt = $pdo->prepare("
-                    UPDATE applications SET
-                        full_name = :full_name, father_name = :father_name, b_form = :b_form,
-                        father_cnic = :father_cnic, dob = :dob, guardian_occupation = :guardian_occupation,
-                        postal_address = :postal_address, last_school = :last_school, 
-                        grade_marks = :grade_marks, total_marks = :total_marks, passing_date = :passing_date,
-                        contact_no = :contact_no, emergency_contact = :emergency_contact, 
-                        email = :email, photo_path = :photo_path, updated_at = :updated_at
-                    WHERE id = :id AND user_id = :user_id
-                ");
+                UPDATE applications SET
+                    full_name = :full_name, father_name = :father_name, b_form = :b_form,
+                    father_cnic = :father_cnic, dob = :dob, guardian_occupation = :guardian_occupation,
+                    postal_address = :postal_address, last_school = :last_school, 
+                    grade_marks = :grade_marks, total_marks = :total_marks, passing_date = :passing_date,
+                    contact_no = :contact_no, emergency_contact = :emergency_contact, 
+                    email = :email, photo_path = :photo_path, updated_at = :updated_at
+                WHERE id = :id AND user_id = :user_id
+            ");
             } else {
                 // Create new application
                 $data['submitted_at'] = date('Y-m-d H:i:s');
                 $data['status'] = 'pending';
                 $stmt = $pdo->prepare("
-                    INSERT INTO applications (
-                        full_name, father_name, b_form, father_cnic, dob, guardian_occupation,
-                        postal_address, last_school, grade_marks, total_marks, passing_date,
-                        contact_no, emergency_contact, email, photo_path, user_id, submitted_at, status
-                    ) VALUES (
-                        :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
-                        :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
-                        :contact_no, :emergency_contact, :email, :photo_path, :user_id, :submitted_at, :status
-                    )
-                ");
+    INSERT INTO applications (
+        full_name, father_name, b_form, father_cnic, dob, guardian_occupation,
+        postal_address, last_school, grade_marks, total_marks, passing_date,
+        contact_no, emergency_contact, email, photo_path, user_id, submitted_at, status
+    ) VALUES (
+        :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
+        :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
+        :contact_no, :emergency_contact, :email, :photo_path, :user_id, :submitted_at, :status
+    )
+");
             }
             
             $stmt->execute($data);
