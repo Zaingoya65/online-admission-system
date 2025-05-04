@@ -437,7 +437,7 @@ try {
                     </div>
                     <input type="text" name="fatherName" id="fatherName" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="Enter father's name" value="<?php echo htmlspecialchars($_SESSION['form_data']['fatherName'] ?? ''); ?>">
+                        placeholder="Enter father's name">
                   </div>
                 </div>
                 
@@ -465,7 +465,7 @@ try {
                     </div>
                     <input type="text" name="fatherCNIC" id="fatherCNIC" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="XXXXX-XXXXXXX-X" value="<?php echo htmlspecialchars($_SESSION['form_data']['fatherCNIC'] ?? ''); ?>">
+                        placeholder="XXXXXXXXXXXXX" >
                   </div>
                 </div>
                 
@@ -479,7 +479,7 @@ try {
                     </div>
                     <input type="date" name="dob" id="dob" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        value="<?php echo htmlspecialchars($_SESSION['form_data']['dob'] ?? ''); ?>">
+                       >
                   </div>
                 </div>
                 
@@ -493,7 +493,7 @@ try {
                     </div>
                     <input type="text" name="guardianOccupation" id="guardianOccupation" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="Occupation" value="<?php echo htmlspecialchars($_SESSION['form_data']['guardianOccupation'] ?? ''); ?>">
+                        placeholder="Occupation">
                   </div>
                 </div>
               </div>
@@ -536,7 +536,7 @@ try {
                     </div>
                     <input type="text" name="lastSchool" id="lastSchool" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="School name" value="<?php echo htmlspecialchars($_SESSION['form_data']['lastSchool'] ?? ''); ?>">
+                        placeholder="School name">
                   </div>
                 </div>
                 
@@ -550,7 +550,7 @@ try {
                     </div>
                     <input type="number" name="gradeMarks" id="gradeMarks" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="Obtained marks" value="<?php echo htmlspecialchars($_SESSION['form_data']['gradeMarks'] ?? ''); ?>">
+                        placeholder="Obtained marks">
                   </div>
                 </div>
                 
@@ -564,7 +564,7 @@ try {
                     </div>
                     <input type="number" name="totalMarks" id="totalMarks" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="Total marks" value="<?php echo htmlspecialchars($_SESSION['form_data']['totalMarks'] ?? ''); ?>">
+                        placeholder="Total marks">
                   </div>
                 </div>
                 
@@ -578,7 +578,7 @@ try {
                     </div>
                     <input type="date" name="passingDate" id="passingDate" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        value="<?php echo htmlspecialchars($_SESSION['form_data']['passingDate'] ?? ''); ?>">
+                       >
                   </div>
                 </div>
               </div>
@@ -602,7 +602,7 @@ try {
                     </div>
                     <input type="tel" name="contactNo" id="contactNo" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="03XX-XXXXXXX" value="<?php echo htmlspecialchars($_SESSION['form_data']['contactNo'] ?? ''); ?>">
+                        placeholder="03XXXXXXXXX">
                   </div>
                 </div>
                 
@@ -616,7 +616,7 @@ try {
                     </div>
                     <input type="tel" name="emergencyContact" id="emergencyContact" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="03XX-XXXXXXX" value="<?php echo htmlspecialchars($_SESSION['form_data']['emergencyContact'] ?? ''); ?>">
+                        placeholder="03XXXXXXXXX">
                   </div>
                 </div>
                 
