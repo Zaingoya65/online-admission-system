@@ -33,7 +33,7 @@ if (isset($_GET['edit'])) {
                 'dob' => $existingApplication['dob'],
                 'guardianOccupation' => $existingApplication['guardian_occupation'],
                 'postalAddress' => $existingApplication['postal_address'],
-                'lastSchool' => $existingApplication['last_school'],
+                'last_school' => $existingApplication['last_school'],
                 'gradeMarks' => $existingApplication['grade_marks'],
                 'totalMarks' => $existingApplication['total_marks'],
                 'passingDate' => $existingApplication['passing_date'],
@@ -52,7 +52,7 @@ if (isset($_GET['edit'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate required fields
     $required = ['fullName', 'fatherName', 'bForm', 'fatherCNIC', 'dob', 'guardianOccupation', 
-                'postalAddress', 'lastSchool', 'gradeMarks', 'totalMarks', 'passingDate',
+                'postalAddress', 'last_school', 'gradeMarks', 'totalMarks', 'passingDate',
                 'contactNo', 'emergencyContact', 'email'];
     
     $errors = [];
@@ -128,7 +128,7 @@ $data = [
   'dob' => $_POST['dob'],
   'guardian_occupation' => $_POST['guardianOccupation'],
   'postal_address' => $_POST['postalAddress'],
-  'last_school' => $_POST['lastSchool'],
+  'last_school' => $_POST['last_school'],
   'grade_marks' => $_POST['gradeMarks'],
   'total_marks' => $_POST['totalMarks'],
   'passing_date' => $_POST['passingDate'],
