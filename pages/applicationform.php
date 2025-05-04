@@ -119,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
       // Prepare data for database
+$// Prepare data for database
 $data = [
   'full_name' => $_POST['fullName'],
   'father_name' => $_POST['fatherName'],
@@ -127,7 +128,7 @@ $data = [
   'dob' => $_POST['dob'],
   'guardian_occupation' => $_POST['guardianOccupation'],
   'postal_address' => $_POST['postalAddress'],
-  'lastSchool' => $_POST['lastSchool'],  // Changed to match parameter name
+  'last_school' => $_POST['lastSchool'],
   'grade_marks' => $_POST['gradeMarks'],
   'total_marks' => $_POST['totalMarks'],
   'passing_date' => $_POST['passingDate'],
@@ -152,7 +153,7 @@ try {
               dob = :dob, 
               guardian_occupation = :guardian_occupation,
               postal_address = :postal_address, 
-              last_school = :lastSchool, 
+              last_school = :last_school, 
               grade_marks = :grade_marks, 
               total_marks = :total_marks, 
               passing_date = :passing_date,
@@ -176,7 +177,7 @@ try {
               contact_no, emergency_contact, email, photo_path, user_id, submitted_at
           ) VALUES (
               :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
-              :postal_address, :lastSchool, :grade_marks, :total_marks, :passing_date,
+              :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
               :contact_no, :emergency_contact, :email, :photo_path, :user_id, :submitted_at
           )
       ");
@@ -192,7 +193,7 @@ try {
   unset($_SESSION['form_errors']);
   unset($_SESSION['form_data']);
   
-  // Redirect to success page
+  // Redirect to document upload page
   header('Location: documentup.php');
   exit;
   
@@ -437,7 +438,9 @@ try {
                     </div>
                     <input type="text" name="fatherName" id="fatherName" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="Enter father's name">
+                        placeholder="Enter father's name"
+                        value="<?php echo htmlspecialchars($_SESSION['form_data']['fatherName'] ?? ''); ?>"
+                        >
                   </div>
                 </div>
                 
@@ -465,7 +468,9 @@ try {
                     </div>
                     <input type="text" name="fatherCNIC" id="fatherCNIC" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="XXXXXXXXXXXXX" >
+                        placeholder="XXXXXXXXXXXXX" 
+                        value="<?php echo htmlspecialchars($_SESSION['form_data']['fatherCNIC'] ?? ''); ?>"
+                        >
                   </div>
                 </div>
                 
@@ -479,7 +484,8 @@ try {
                     </div>
                     <input type="date" name="dob" id="dob" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                       >
+                        value="<?php echo htmlspecialchars($_SESSION['form_data']['dob'] ?? ''); ?>"
+                        >
                   </div>
                 </div>
                 
@@ -493,7 +499,9 @@ try {
                     </div>
                     <input type="text" name="guardianOccupation" id="guardianOccupation" required
                         class="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5"
-                        placeholder="Occupation">
+                        placeholder="Occupation"
+                        value="<?php echo htmlspecialchars($_SESSION['form_data']['guardianOccupation'] ?? ''); ?>"
+                        >
                   </div>
                 </div>
               </div>
