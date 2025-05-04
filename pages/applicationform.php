@@ -10,6 +10,44 @@ if (!isset($_SESSION['form_data'])) {
     $_SESSION['form_data'] = [];
 }
 
+// Check if editing an existing application
+$isEditMode = false;
+$existingApplication = null;
+$existingPhotoPath = null;
+
+if (isset($_GET['edit'])) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM applications WHERE id = ? AND user_id = ?");
+        $stmt->execute([$_GET['edit'], $_SESSION['user_id']]);
+        $existingApplication = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($existingApplication) {
+            $isEditMode = true;
+            $existingPhotoPath = $existingApplication['photo_path'];
+            // Populate form data from existing application
+            $_SESSION['form_data'] = [
+                'fullName' => $existingApplication['full_name'],
+                'fatherName' => $existingApplication['father_name'],
+                'bForm' => $existingApplication['b_form'],
+                'fatherCNIC' => $existingApplication['father_cnic'],
+                'dob' => $existingApplication['dob'],
+                'guardianOccupation' => $existingApplication['guardian_occupation'],
+                'postalAddress' => $existingApplication['postal_address'],
+                'lastSchool' => $existingApplication['last_school'],
+                'gradeMarks' => $existingApplication['grade_marks'],
+                'totalMarks' => $existingApplication['total_marks'],
+                'passingDate' => $existingApplication['passing_date'],
+                'contactNo' => $existingApplication['contact_no'],
+                'emergencyContact' => $existingApplication['emergency_contact'],
+                'email' => $existingApplication['email'],
+                'confirmation' => 'on'
+            ];
+        }
+    } catch (PDOException $e) {
+        // Handle error
+        $_SESSION['form_errors'] = ["Error loading application: " . $e->getMessage()];
+    }
+}
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate required fields
@@ -36,8 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // If no errors, process the form
     if (empty($errors)) {
-        // Handle file upload (only photo in this form)
-        $photoPath = null;
+        $photoPath = $existingPhotoPath; // Keep existing photo if no new one uploaded
+        
+        // Handle file upload only if a new file is provided
         if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
             $allowedTypes = ['image/jpeg', 'image/png'];
             $maxSize = 2 * 1024 * 1024; // 2MB
@@ -47,6 +86,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!file_exists($uploadDir)) {
                     mkdir($uploadDir, 0777, true);
                 }
+                
+                // Remove old photo if exists
+                if ($photoPath && file_exists($uploadDir . $photoPath)) {
+                    unlink($uploadDir . $photoPath);
+                }
+                
                 $filename = uniqid() . '_' . basename($_FILES['photo']['name']);
                 $targetPath = $uploadDir . $filename;
                 
@@ -58,15 +103,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $errors[] = "Invalid photo type or size (JPEG/PNG, Max 2MB)";
             }
-        } else {
-            $errors[] = "Student photo is required";
+        } elseif (!$photoPath) {
+            // Only require photo if not in edit mode or if no existing photo
+            if (!$isEditMode) {
+                $errors[] = "Student photo is required";
+            }
         }
         
         // If there were file upload errors, store them and redirect back
         if (!empty($errors)) {
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_data'] = $_POST;
-            header('Location: applicationform.php');
+            header('Location: applicationform.php' . ($isEditMode ? '?edit=' . $_GET['edit'] : ''));
             exit;
         }
         
@@ -88,26 +136,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'email' => $_POST['email'],
             'photo_path' => $photoPath,
             'user_id' => $_SESSION['user_id'],
-            'submitted_at' => date('Y-m-d H:i:s')
+            'updated_at' => date('Y-m-d H:i:s')
         ];
         
         try {
-            $stmt = $pdo->prepare("
-                INSERT INTO applications (
-                    full_name, father_name, b_form, father_cnic, dob, guardian_occupation,
-                    postal_address, last_school, grade_marks, total_marks, passing_date,
-                    contact_no, emergency_contact, email, photo_path, user_id, submitted_at
-                ) VALUES (
-                    :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
-                    :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
-                    :contact_no, :emergency_contact, :email, :photo_path, :user_id, :submitted_at
-                )
-            ");
-            
-            $stmt->execute($data);
-            
-            // Get the last inserted ID
-            $applicationId = $pdo->lastInsertId();
+            if ($isEditMode) {
+                // Update existing application
+                $data['id'] = $_GET['edit'];
+                $stmt = $pdo->prepare("
+                    UPDATE applications SET
+                        full_name = :full_name, 
+                        father_name = :father_name, 
+                        b_form = :b_form, 
+                        father_cnic = :father_cnic, 
+                        dob = :dob, 
+                        guardian_occupation = :guardian_occupation,
+                        postal_address = :postal_address, 
+                        last_school = :last_school, 
+                        grade_marks = :grade_marks, 
+                        total_marks = :total_marks, 
+                        passing_date = :passing_date,
+                        contact_no = :contact_no, 
+                        emergency_contact = :emergency_contact, 
+                        email = :email, 
+                        photo_path = :photo_path,
+                        updated_at = :updated_at
+                    WHERE id = :id AND user_id = :user_id
+                ");
+                
+                $stmt->execute($data);
+                $applicationId = $_GET['edit'];
+            } else {
+                // Create new application
+                $data['submitted_at'] = date('Y-m-d H:i:s');
+                $stmt = $pdo->prepare("
+                    INSERT INTO applications (
+                        full_name, father_name, b_form, father_cnic, dob, guardian_occupation,
+                        postal_address, last_school, grade_marks, total_marks, passing_date,
+                        contact_no, emergency_contact, email, photo_path, user_id, submitted_at
+                    ) VALUES (
+                        :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
+                        :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
+                        :contact_no, :emergency_contact, :email, :photo_path, :user_id, :submitted_at
+                    )
+                ");
+                
+                $stmt->execute($data);
+                $applicationId = $pdo->lastInsertId();
+            }
             
             // Store application ID in session for document upload page
             $_SESSION['current_application_id'] = $applicationId;
@@ -124,14 +200,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "Database error: " . $e->getMessage();
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_data'] = $_POST;
-            header('Location: applicationform.php');
+            header('Location: applicationform.php' . ($isEditMode ? '?edit=' . $_GET['edit'] : ''));
             exit;
         }
     } else {
         // If there were errors, store them in session and redirect back
         $_SESSION['form_errors'] = $errors;
         $_SESSION['form_data'] = $_POST;
-        header('Location: applicationform.php');
+        header('Location: applicationform.php' . ($isEditMode ? '?edit=' . $_GET['edit'] : ''));
         exit;
     }
 }
@@ -155,7 +231,65 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <title>Application Form - Alhijrah AHRSC</title>
+  <title><?php echo $isEditMode ? 'Edit' : 'New'; ?> Application - Alhijrah AHRSC</title>
+  <style>
+    .image-upload-container {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      border: 2px dashed #d1d5db;
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
+    }
+    
+    .image-upload-container:hover {
+      border-color: #818cf8;
+    }
+    
+    .image-upload-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      text-align: center;
+      color: #6b7280;
+    }
+    
+    .image-upload-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #9ca3af;
+    }
+    
+    .image-upload-preview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 0.375rem;
+    }
+    
+    .image-upload-change {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      color: #4f46e5;
+      display: none;
+    }
+    
+    .image-upload-container:hover .image-upload-change {
+      display: block;
+    }
+  </style>
   <script>
     function previewImage(input, previewId) {
         const preview = document.getElementById(previewId);
@@ -165,12 +299,26 @@ try {
             const reader = new FileReader();
             
             reader.onload = function(e) {
-                preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover" alt="Preview">`;
+                preview.innerHTML = `
+                  <img src="${e.target.result}" class="image-upload-preview" alt="Preview">
+                  <span class="image-upload-change">Change Photo</span>
+                `;
             }
             
             reader.readAsDataURL(file);
         }
     }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // If in edit mode and has existing photo, show it
+        <?php if ($isEditMode && $existingPhotoPath): ?>
+            const preview = document.getElementById('photoPreview');
+            preview.innerHTML = `
+              <img src="../uploads/applications/<?php echo $existingPhotoPath; ?>" class="image-upload-preview" alt="Preview">
+              <span class="image-upload-change">Change Photo</span>
+            `;
+        <?php endif; ?>
+    });
   </script>
 </head>
 <body class="bg-gray-100">
@@ -203,12 +351,19 @@ try {
         <div class="bg-white rounded-lg shadow-sm p-6">
           <!-- Enhanced Header Section -->
           <div class="border-b border-gray-200 pb-4 mb-6">
-            <h2 class="text-xl font-semibold text-gray-800 flex items-center">
-              <span class="bg-indigo-100 p-2 rounded-full mr-3">
-                <i class="fas fa-user-graduate text-indigo-600"></i>
-              </span>
-              Student Information
-            </h2>
+            <div class="flex justify-between items-center">
+              <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                <span class="bg-indigo-100 p-2 rounded-full mr-3">
+                  <i class="fas fa-user-graduate text-indigo-600"></i>
+                </span>
+                <?php echo $isEditMode ? 'Edit Application' : 'New Application'; ?>
+              </h2>
+              <?php if ($isEditMode): ?>
+                <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                  <i class="fas fa-edit mr-1"></i> Editing Mode
+                </span>
+              <?php endif; ?>
+            </div>
             <div class="bg-blue-50 p-3 rounded-md mt-3">
               <h3 class="text-sm font-medium text-blue-800 flex items-center">
                 <i class="fas fa-info-circle text-blue-500 mr-2"></i>
@@ -225,6 +380,10 @@ try {
           </div>
           
           <form class="space-y-6" action="" method="POST" enctype="multipart/form-data">
+            <?php if ($isEditMode): ?>
+              <input type="hidden" name="edit_mode" value="1">
+            <?php endif; ?>
+            
             <!-- Personal Information Card -->
             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
               <h3 class="text-md font-medium text-gray-700 mb-4 flex items-center">
@@ -234,25 +393,26 @@ try {
               
               <div>
                 <label for="photo" class="block text-sm font-medium text-gray-700">
-                  Student Photo <span class="text-red-500">*</span>
+                  Student Photo <?php if (!$isEditMode): ?><span class="text-red-500">*</span><?php endif; ?>
                 </label>
                 <div class="mt-1">
-                  <input type="file" name="photo" id="photo" accept="image/*" required
+                  <input type="file" name="photo" id="photo" accept="image/*" <?php if (!$isEditMode) echo 'required'; ?>
                       class="hidden" onchange="previewImage(this, 'photoPreview')">
                   
                   <label for="photo" class="cursor-pointer">
-                      <div id="photoPreview" class="w-full h-40 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden">
-                          <div class="text-center text-gray-500">
-                              <i class="fas fa-camera text-2xl mb-2"></i>
-                              <p class="text-xs">Click to upload photo</p>
+                      <div id="photoPreview" class="image-upload-container">
+                          <div class="image-upload-label">
+                              <i class="fas fa-camera image-upload-icon"></i>
+                              <p class="text-xs">Click to <?php echo $isEditMode && $existingPhotoPath ? 'change' : 'upload'; ?> photo</p>
+                              <p class="text-xxs mt-1">JPEG or PNG (Max 2MB)</p>
                           </div>
                       </div>
                   </label>
-                  <p class="mt-1 text-xs text-gray-500">JPEG or PNG (Max 2MB)</p>
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <!-- Rest of your form fields remain the same -->
                 <div>
                   <label for="fullName" class="block text-sm font-medium text-gray-700">
                     Full Name <span class="text-red-500">*</span>
@@ -531,7 +691,7 @@ try {
                 <i class="fas fa-redo mr-2"></i> Reset Form
               </button>
               <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <i class="fas fa-paper-plane mr-2"></i> Submit Application
+                <i class="fas fa-paper-plane mr-2"></i> <?php echo $isEditMode ? 'Update Application' : 'Submit Application'; ?>
               </button>
             </div>
           </form>
