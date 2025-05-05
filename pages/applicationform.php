@@ -138,74 +138,119 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         
         try {
-            if ($isEditMode) {
-                // Update existing application
-                $data['id'] = $_GET['edit'];
-                $stmt = $pdo->prepare("
-                    UPDATE applications SET
-                        full_name = :full_name, 
-                        father_name = :father_name, 
-                        b_form = :b_form,
-                        father_cnic = :father_cnic, 
-                        dob = :dob, 
-                        guardian_occupation = :guardian_occupation,
-                        postal_address = :postal_address, 
-                        last_school = :last_school, 
-                        grade_marks = :grade_marks, 
-                        total_marks = :total_marks, 
-                        passing_date = :passing_date,
-                        contact_no = :contact_no, 
-                        emergency_contact = :emergency_contact, 
-                        email = :email, 
-                        photo_path = :photo_path, 
-                        updated_at = :updated_at
-                    WHERE id = :id AND user_id = :user_id
-                ");
-                
-                $data['user_id'] = $_SESSION['user_id'];
-                $stmt->execute($data);
-            } else {
-                // Create new application
-                $data['submitted_at'] = date('Y-m-d H:i:s');
-                $data['status'] = 'pending';
-                
-                $stmt = $pdo->prepare("
-                    INSERT INTO applications (
-                        full_name, father_name, b_form, father_cnic, dob, guardian_occupation,
-                        postal_address, last_school, grade_marks, total_marks, passing_date,
-                        contact_no, emergency_contact, email, photo_path, user_id, submitted_at, status
-                    ) VALUES (
-                        :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
-                        :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
-                        :contact_no, :emergency_contact, :email, :photo_path, :user_id, :submitted_at, :status
-                    )
-                ");
-                
-                $stmt->execute($data);
-                $applicationId = $pdo->lastInsertId();
-            }
-            
-            // Clear form data and errors
-            unset($_SESSION['form_data']);
-            unset($_SESSION['form_errors']);
-            
-            // Redirect to success page
-            header('Location: application_success.php?id=' . ($isEditMode ? $_GET['edit'] : $applicationId));
-            exit;
-            
-        } catch (PDOException $e) {
-            error_log("Database error: " . $e->getMessage());
-            $_SESSION['form_errors'] = ["A database error occurred. Please try again."];
-            $_SESSION['form_data'] = $_POST;
-            header('Location: applicationform.php' . ($isEditMode ? '?edit=' . $_GET['edit'] : ''));
-            exit;
-        }
-    } else {
-        $_SESSION['form_errors'] = $errors;
-        $_SESSION['form_data'] = $_POST;
-        header('Location: applicationform.php' . ($isEditMode ? '?edit=' . $_GET['edit'] : ''));
-        exit;
-    }
+          if ($isEditMode) {
+              // Update existing application
+              $stmt = $pdo->prepare("
+                  UPDATE applications SET
+                      full_name = :full_name, 
+                      father_name = :father_name, 
+                      b_form = :b_form,
+                      father_cnic = :father_cnic, 
+                      dob = :dob, 
+                      guardian_occupation = :guardian_occupation,
+                      postal_address = :postal_address, 
+                      last_school = :last_school, 
+                      grade_marks = :grade_marks, 
+                      total_marks = :total_marks, 
+                      passing_date = :passing_date,
+                      contact_no = :contact_no, 
+                      emergency_contact = :emergency_contact, 
+                      email = :email, 
+                      photo_path = :photo_path, 
+                      updated_at = :updated_at
+                  WHERE id = :id AND user_id = :user_id
+              ");
+              
+              $data = [
+                  'full_name' => $_POST['fullName'],
+                  'father_name' => $_POST['fatherName'],
+                  'b_form' => $_POST['bForm'],
+                  'father_cnic' => $_POST['fatherCNIC'],
+                  'dob' => $_POST['dob'],
+                  'guardian_occupation' => $_POST['guardianOccupation'],
+                  'postal_address' => $_POST['postalAddress'],
+                  'last_school' => $_POST['lastSchool'],
+                  'grade_marks' => $_POST['gradeMarks'],
+                  'total_marks' => $_POST['totalMarks'],
+                  'passing_date' => $_POST['passingDate'],
+                  'contact_no' => $_POST['contactNo'],
+                  'emergency_contact' => $_POST['emergencyContact'],
+                  'email' => $_POST['email'],
+                  'photo_path' => $photoPath,
+                  'updated_at' => date('Y-m-d H:i:s'),
+                  'id' => $_GET['edit'],
+                  'user_id' => $_SESSION['user_id']
+              ];
+              
+              $stmt->execute($data);
+              
+              if ($stmt->rowCount() === 0) {
+                  throw new PDOException("No rows affected - application not found or not owned by user");
+              }
+          } else {
+              // Create new application
+              $stmt = $pdo->prepare("
+                  INSERT INTO applications (
+                      full_name, father_name, b_form, father_cnic, dob, guardian_occupation,
+                      postal_address, last_school, grade_marks, total_marks, passing_date,
+                      contact_no, emergency_contact, email, photo_path, user_id, submitted_at, status
+                  ) VALUES (
+                      :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
+                      :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
+                      :contact_no, :emergency_contact, :email, :photo_path, :user_id, :submitted_at, :status
+                  )
+              ");
+              
+              $data = [
+                  'full_name' => $_POST['fullName'],
+                  'father_name' => $_POST['fatherName'],
+                  'b_form' => $_POST['bForm'],
+                  'father_cnic' => $_POST['fatherCNIC'],
+                  'dob' => $_POST['dob'],
+                  'guardian_occupation' => $_POST['guardianOccupation'],
+                  'postal_address' => $_POST['postalAddress'],
+                  'last_school' => $_POST['lastSchool'],
+                  'grade_marks' => $_POST['gradeMarks'],
+                  'total_marks' => $_POST['totalMarks'],
+                  'passing_date' => $_POST['passingDate'],
+                  'contact_no' => $_POST['contactNo'],
+                  'emergency_contact' => $_POST['emergencyContact'],
+                  'email' => $_POST['email'],
+                  'photo_path' => $photoPath,
+                  'user_id' => $_SESSION['user_id'],
+                  'submitted_at' => date('Y-m-d H:i:s'),
+                  'status' => 'pending'
+              ];
+              
+              $stmt->execute($data);
+              $applicationId = $pdo->lastInsertId();
+          }
+          
+          // Clear form data and errors
+          unset($_SESSION['form_data']);
+          unset($_SESSION['form_errors']);
+          
+          // Redirect to success page
+          header('Location: application_success.php?id=' . ($isEditMode ? $_GET['edit'] : $applicationId));
+          exit;
+          
+      } catch (PDOException $e) {
+          error_log("Database error: " . $e->getMessage());
+          error_log("SQL: " . $stmt->queryString);
+          error_log("Data: " . print_r($data, true));
+          
+          $_SESSION['form_errors'] = ["A database error occurred. Details: " . $e->getMessage()];
+          $_SESSION['form_data'] = $_POST;
+          header('Location: applicationform.php' . ($isEditMode ? '?edit=' . $_GET['edit'] : ''));
+          exit;
+      }
+  } else {
+      $_SESSION['form_errors'] = $errors;
+      $_SESSION['form_data'] = $_POST;
+      header('Location: applicationform.php' . ($isEditMode ? '?edit=' . $_GET['edit'] : ''));
+      exit;
+  }
+
 }
 
 // Fetch user data
