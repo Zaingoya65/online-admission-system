@@ -138,62 +138,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         
         try {
-          if ($isEditMode) {
-              // Update existing application
-              $stmt = $pdo->prepare("
-                  UPDATE applications SET
-                      full_name = :full_name, 
-                      father_name = :father_name, 
-                      b_form = :b_form,
-                      father_cnic = :father_cnic, 
-                      dob = :dob, 
-                      guardian_occupation = :guardian_occupation,
-                      postal_address = :postal_address, 
-                      last_school = :last_school, 
-                      grade_marks = :grade_marks, 
-                      total_marks = :total_marks, 
-                      passing_date = :passing_date,
-                      contact_no = :contact_no, 
-                      emergency_contact = :emergency_contact, 
-                      email = :email, 
-                      photo_path = :photo_path, 
-                      updated_at = :updated_at
-                  WHERE id = :id
-              ");
-              
-              // Remove user_id from data array since we're not using it in WHERE clause
-              unset($data['user_id']);
-          } else {
-              // Create new application
-              $stmt = $pdo->prepare("
-                  INSERT INTO applications (
-                      full_name, father_name, b_form, father_cnic, dob, guardian_occupation,
-                      postal_address, last_school, grade_marks, total_marks, passing_date,
-                      contact_no, emergency_contact, email, photo_path, user_id, submitted_at, status
-                  ) VALUES (
-                      :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
-                      :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
-                      :contact_no, :emergency_contact, :email, :photo_path, :user_id, :submitted_at, :status
-                  )
-              ");
-          }
-          
-          // Debugging: Output the query and parameters
-          error_log("SQL: " . $stmt->queryString);
-          error_log("Data: " . print_r($data, true));
-          
-          $stmt->execute($data);
-          $applicationId = $isEditMode ? $_GET['edit'] : $pdo->lastInsertId();
-          
-          // ... rest of your code
-      } catch (PDOException $e) {
-          error_log("PDO Error: " . $e->getMessage());
-          $errors[] = "Database error: " . $e->getMessage();
-          $_SESSION['form_errors'] = $errors;
-          $_SESSION['form_data'] = $_POST;
-          header('Location: applicationform.php' . ($isEditMode ? '?edit=' . $_GET['edit'] : ''));
-          exit;
-      }
+            if ($isEditMode) {
+                // Update existing application
+                $data['id'] = $_GET['edit'];
+                $stmt = $pdo->prepare("
+                    UPDATE applications SET
+                        full_name = :full_name, 
+                        father_name = :father_name, 
+                        b_form = :b_form,
+                        father_cnic = :father_cnic, 
+                        dob = :dob, 
+                        guardian_occupation = :guardian_occupation,
+                        postal_address = :postal_address, 
+                        last_school = :last_school, 
+                        grade_marks = :grade_marks, 
+                        total_marks = :total_marks, 
+                        passing_date = :passing_date,
+                        contact_no = :contact_no, 
+                        emergency_contact = :emergency_contact, 
+                        email = :email, 
+                        photo_path = :photo_path, 
+                        updated_at = :updated_at
+                    WHERE id = :id AND user_id = :user_id
+                ");
+                
+                $data['user_id'] = $_SESSION['user_id'];
+                $stmt->execute($data);
+            } else {
+                // Create new application
+                $data['submitted_at'] = date('Y-m-d H:i:s');
+                $data['status'] = 'pending';
+                
+                $stmt = $pdo->prepare("
+                    INSERT INTO applications (
+                        full_name, father_name, b_form, father_cnic, dob, guardian_occupation,
+                        postal_address, last_school, grade_marks, total_marks, passing_date,
+                        contact_no, emergency_contact, email, photo_path, user_id, submitted_at, status
+                    ) VALUES (
+                        :full_name, :father_name, :b_form, :father_cnic, :dob, :guardian_occupation,
+                        :postal_address, :last_school, :grade_marks, :total_marks, :passing_date,
+                        :contact_no, :emergency_contact, :email, :photo_path, :user_id, :submitted_at, :status
+                    )
+                ");
+                
+                $stmt->execute($data);
+                $applicationId = $pdo->lastInsertId();
+            }
+            
+            // Clear form data and errors
+            unset($_SESSION['form_data']);
+            unset($_SESSION['form_errors']);
+            
+            // Redirect to success page
+            header('Location: application_success.php?id=' . ($isEditMode ? $_GET['edit'] : $applicationId));
+            exit;
+            
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            $_SESSION['form_errors'] = ["A database error occurred. Please try again."];
+            $_SESSION['form_data'] = $_POST;
+            header('Location: applicationform.php' . ($isEditMode ? '?edit=' . $_GET['edit'] : ''));
+            exit;
+        }
     } else {
         $_SESSION['form_errors'] = $errors;
         $_SESSION['form_data'] = $_POST;
@@ -231,12 +237,14 @@ try {
       overflow: hidden;
       margin: 0 auto;
       transition: all 0.3s ease;
+      background-color: #f9fafb;
     }
-    
-    .image-upload-container:hover {
+
+    .image-upload-container.has-image {
       border-color: #818cf8;
+      border-style: solid;
     }
-    
+
     .image-upload-label {
       display: flex;
       flex-direction: column;
@@ -248,13 +256,13 @@ try {
       text-align: center;
       color: #6b7280;
     }
-    
+
     .image-upload-icon {
       font-size: 1.5rem;
       margin-bottom: 0.5rem;
       color: #9ca3af;
     }
-    
+
     .image-upload-preview {
       position: absolute;
       top: 0;
@@ -263,23 +271,43 @@ try {
       height: 100%;
       object-fit: cover;
     }
-    
-    .image-upload-change {
+
+    .image-upload-change,
+    .image-upload-remove {
       position: absolute;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .image-upload-change {
       bottom: 10px;
       right: 10px;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
       color: #4f46e5;
+    }
+
+    .image-upload-remove {
+      top: 10px;
+      right: 10px;
+      color: #ef4444;
+    }
+
+    .image-upload-change:hover,
+    .image-upload-remove:hover {
+      transform: scale(1.1);
+    }
+
+    .image-upload-container:not(.has-image) .image-upload-change,
+    .image-upload-container:not(.has-image) .image-upload-remove {
       display: none;
     }
-    
-    .image-upload-container:hover .image-upload-change {
-      display: block;
-    }
-    
+
     .cnic-input {
       letter-spacing: 1px;
     }
@@ -290,19 +318,56 @@ try {
         const file = input.files[0];
         
         if (file) {
+            // Check file type and size
+            const validTypes = ['image/jpeg', 'image/png'];
+            const maxSize = 2 * 1024 * 1024; // 2MB
+            
+            if (!validTypes.includes(file.type)) {
+                alert('Please upload a JPEG or PNG image (max 2MB)');
+                input.value = '';
+                return;
+            }
+            
+            if (file.size > maxSize) {
+                alert('Image size exceeds 2MB limit');
+                input.value = '';
+                return;
+            }
+            
             const reader = new FileReader();
             
             reader.onload = function(e) {
                 preview.innerHTML = `
-                  <img src="${e.target.result}" class="image-upload-preview" alt="Preview">
-                  <span class="image-upload-change">Change</span>
+                    <img src="${e.target.result}" class="image-upload-preview" alt="Preview">
+                    <span class="image-upload-change">
+                        <i class="fas fa-sync-alt"></i>
+                    </span>
+                    <span class="image-upload-remove" onclick="removeImage(this)">
+                        <i class="fas fa-times"></i>
+                    </span>
                 `;
+                preview.classList.add('has-image');
             }
             
             reader.readAsDataURL(file);
         }
     }
-    
+
+    function removeImage(button) {
+        const container = button.closest('.image-upload-container');
+        const input = document.getElementById('photo');
+        
+        container.innerHTML = `
+            <div class="image-upload-label">
+                <i class="fas fa-camera image-upload-icon"></i>
+                <p class="text-xs">Click to upload</p>
+                <p class="text-xxs mt-1">JPEG/PNG, Max 2MB</p>
+            </div>
+        `;
+        container.classList.remove('has-image');
+        input.value = '';
+    }
+
     function formatCNIC(input) {
         // Format as XXXXX-XXXXXXX-X
         let value = input.value.replace(/\D/g, '');
@@ -321,12 +386,12 @@ try {
     }
     
     function formatPhone(input) {
-        // Format as XXX-XXXXXXX
+        // Format as XXXX-XXXXXXX
         let value = input.value.replace(/\D/g, '');
         if (value.length > 11) value = value.substring(0, 11);
         
         let formatted = '';
-        if (value.length > 3) {
+        if (value.length > 4) {
             formatted = value.substring(0, 4) + '-' + value.substring(4);
         } else {
             formatted = value;
@@ -338,9 +403,15 @@ try {
         <?php if ($isEditMode && $existingPhotoPath): ?>
             const preview = document.getElementById('photoPreview');
             preview.innerHTML = `
-              <img src="../uploads/applications/<?= $existingPhotoPath ?>" class="image-upload-preview" alt="Preview">
-              <span class="image-upload-change">Change</span>
+                <img src="../uploads/applications/<?= $existingPhotoPath ?>?<?= time() ?>" class="image-upload-preview" alt="Preview">
+                <span class="image-upload-change">
+                    <i class="fas fa-sync-alt"></i>
+                </span>
+                <span class="image-upload-remove" onclick="removeImage(this)">
+                    <i class="fas fa-times"></i>
+                </span>
             `;
+            preview.classList.add('has-image');
         <?php endif; ?>
     });
   </script>
